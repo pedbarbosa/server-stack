@@ -1,0 +1,9 @@
+# Environment variables
+.env
+
+# Container folders
+ddclient/
+downloads/
+mariadb/
+rutorrent/
+sickchill/

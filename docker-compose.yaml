@@ -1,0 +1,103 @@
+version: "3"
+services:
+  vpn:
+    image: bubuntux/nordvpn
+    network_mode: bridge
+    container_name: nordvpn
+    cap_add:
+      - NET_ADMIN
+      - SYS_MODULE
+    sysctls:
+      - net.ipv4.conf.all.rp_filter=2
+    devices:
+      - /dev/net/tun
+    environment:
+      - "USER=${NORDVPN_USER}" # Required
+      - "PASS=${NORDVPN_PASS}"
+      - DEBUG=on
+      - TECHNOLOGY=NordLynx
+      - NETWORK=192.168.2.0/24
+    ports:
+      - 8082:80
+      - 8083:443
+    healthcheck:
+      test: "curl -ILXGET https://www.google.com"
+    restart: always
+
+  rutorrent:
+    image: linuxserver/rutorrent
+    network_mode: service:vpn
+    container_name: rutorrent
+    depends_on:
+      - vpn
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - "TZ=${TIMEZONE}"
+    volumes:
+      - ./rutorrent:/config
+      - ./downloads:/downloads
+    healthcheck:
+        test: "curl -ILXGET https://www.google.com"
+    restart: always
+
+  sickchill:
+    image: linuxserver/sickchill
+    container_name: sickchill
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - "TZ=${TIMEZONE}"
+    volumes:
+      - ./sickchill:/config
+      - ./downloads:/downloads
+      - "${VIDEO_PATH}:/video"
+    ports:
+      - 8081:8081
+    healthcheck:
+      test: "wget http://localhost:8081 --spider -q"
+    restart: always
+
+  ddclient:
+    image: linuxserver/ddclient
+    container_name: ddclient
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - "TZ=${TIMEZONE}"
+    volumes:
+      - ./ddclient:/config
+    restart: always
+
+  googlehomekodi:
+    image: omertu/googlehomekodi
+    container_name: ghome-kodi
+    environment:
+      - "KODI_PROTOCOL=${KODI_PROTOCOL}"
+      - "KODI_IP=${KODI_IP}"
+      - "KODI_PORT=${KODI_PORT}"
+      - "KODI_USER=${KODI_USER}"
+      - "KODI_PASSWORD=${KODI_PASS}"
+      - "AUTH_TOKEN=${IFTTT_TOKEN}"
+    ports:
+      - "8099:8099"
+    restart: always
+
+  mariadb:
+    image: linuxserver/mariadb
+    container_name: mariadb
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - "TZ=${TIMEZONE}"
+      - "MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}"
+    volumes:
+      - ./mariadb:/config
+    ports:
+      - 3306:3306
+    healthcheck:
+      test: ["CMD", "mysqladmin" ,"ping", "-h", "localhost"]
+      timeout: 20s
+      retries: 10
+    restart: always
+
