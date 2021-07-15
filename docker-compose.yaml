@@ -16,7 +16,9 @@ services:
       - "PASS=${NORDVPN_PASS}"
       - DEBUG=on
       - TECHNOLOGY=NordLynx
-      - NETWORK=192.168.2.0/24
+      - "NETWORK=${MAIN_NETWORK}"
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
     ports:
       - 8082:80
       - 8083:443
@@ -71,7 +73,7 @@ services:
 
   googlehomekodi:
     image: omertu/googlehomekodi
-    container_name: ghome-kodi
+    container_name: googlehomekodi
     environment:
       - "KODI_PROTOCOL=${KODI_PROTOCOL}"
       - "KODI_IP=${KODI_IP}"
@@ -79,6 +81,8 @@ services:
       - "KODI_USER=${KODI_USER}"
       - "KODI_PASSWORD=${KODI_PASS}"
       - "AUTH_TOKEN=${IFTTT_TOKEN}"
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
     ports:
       - "8099:8099"
     restart: always
