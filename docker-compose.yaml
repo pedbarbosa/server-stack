@@ -21,13 +21,12 @@ services:
       - /etc/localtime:/etc/localtime:ro
     ports:
       - 8082:80
-      - 8083:443
     healthcheck:
       test: "curl -ILXGET https://www.google.com"
     restart: always
 
   rutorrent:
-    image: linuxserver/rutorrent
+    image: pedbarbosa/docker-rutorrent
     network_mode: service:vpn
     container_name: rutorrent
     depends_on:
@@ -39,11 +38,13 @@ services:
     volumes:
       - ./rutorrent:/config
       - ./downloads:/downloads
+      - /backup/rutorrent:/downloads/backup
     healthcheck:
-        test: "curl -ILXGET https://www.google.com"
+      test: "curl -ILXGET https://www.google.com && curl -ILXGET http://127.0.0.1:80"
     restart: always
 
   sickchill:
+    #image: 'linuxserver/sickchill:2021.7.23'
     image: linuxserver/sickchill
     container_name: sickchill
     environment:
@@ -68,23 +69,7 @@ services:
       - PGID=1000
       - "TZ=${TIMEZONE}"
     volumes:
-      - ./ddclient:/config
-    restart: always
-
-  googlehomekodi:
-    image: omertu/googlehomekodi
-    container_name: googlehomekodi
-    environment:
-      - "KODI_PROTOCOL=${KODI_PROTOCOL}"
-      - "KODI_IP=${KODI_IP}"
-      - "KODI_PORT=${KODI_PORT}"
-      - "KODI_USER=${KODI_USER}"
-      - "KODI_PASSWORD=${KODI_PASS}"
-      - "AUTH_TOKEN=${IFTTT_TOKEN}"
-    volumes:
-      - /etc/localtime:/etc/localtime:ro
-    ports:
-      - "8099:8099"
+      - ./ddclient/ddclient.conf:/config/ddclient.conf
     restart: always
 
   mariadb:
@@ -103,5 +88,110 @@ services:
       test: ["CMD", "mysqladmin" ,"ping", "-h", "localhost"]
       timeout: 20s
       retries: 10
+    restart: always
+
+  googlehomekodi:
+    image: omertu/googlehomekodi
+    container_name: googlehomekodi
+    environment:
+      - "KODI_PROTOCOL=${KODI_PROTOCOL}"
+      - "KODI_IP=${KODI_IP}"
+      - "KODI_PORT=${KODI_PORT}"
+      - "KODI_USER=${KODI_USER}"
+      - "KODI_PASSWORD=${KODI_PASS}"
+      - "AUTH_TOKEN=${IFTTT_TOKEN}"
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+    ports:
+      - "8099:8099"
+    restart: always
+
+  swag:
+    image: linuxserver/swag
+    container_name: swag
+    cap_add:
+      - NET_ADMIN
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - "TZ=${TIMEZONE}"
+      - "URL=${SWAG_DOMAIN}"
+      - "SUBDOMAINS=${SWAG_SUBDOMAINS}"
+      - VALIDATION=dns
+      - DNSPLUGIN=cloudflare
+      - "EMAIL=${SWAG_EMAIL}"
+    volumes:
+      - ./swag:/config
+    restart: unless-stopped
+
+  syncthing:
+    image: linuxserver/syncthing
+    container_name: syncthing
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - "TZ=${TIMEZONE}"
+    volumes:
+      - ./syncthing:/config
+      - "${PHOTOS_PATH}:/photos"
+      - "${SYNCTHING_PATH}:/targets"
+    ports:
+      - 8384:8384
+      - 22000:22000/tcp
+      - 22000:22000/udp
+      - 21027:21027/udp
+    restart: unless-stopped
+
+  jellyfin:
+    image: linuxserver/jellyfin
+    container_name: jellyfin
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - "TZ=${TIMEZONE}"
+    volumes:
+      - ./jellyfin:/config
+      - "${VIDEO_PATH}/Movies:/data/movies"
+      - "${VIDEO_PATH}/TV:/data/tvshows"
+    ports:
+      - 8096:8096
+    devices:
+      - /dev/dri:/dev/dri
+    restart: unless-stopped
+
+  proxy:
+    image: nginx
+    container_name: proxy
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - ./proxy/.htpasswd:/etc/nginx/.htpasswd:ro
+      - ./proxy/certs:/etc/nginx/certs:ro
+      - ./proxy/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./proxy/index.html:/var/www/html/index.html:ro
+    ports:
+      - 80:80
+      - 443:443
+    restart: always
+
+  autoheal:
+    image: willfarrell/autoheal
+    container_name: autoheal
+    environment:
+      - AUTOHEAL_CONTAINER_LABEL=all
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    restart: always
+
+  postfix:
+    image: pedbarbosa/docker-postfix
+    container_name: postfix
+    ports:
+      - "25:25"
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - ./postfix:/config
+      - /var/log/maillog:/var/log/maillog
+    healthcheck:
+      test: "nc -vz 127.0.0.1 25"
     restart: always
 
