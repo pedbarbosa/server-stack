@@ -1,9 +1,15 @@
 # Environment variables
 .env
 
-# Container folders
+# Container config folders
 ddclient/
 downloads/
+jellyfin/
 mariadb/
+postfix/
+proxy/
 rutorrent/
 sickchill/
+swag/
+syncthing/
+
