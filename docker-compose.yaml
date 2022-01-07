@@ -51,6 +51,18 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock
     restart: always
 
+  cgp:
+    image: pedbarbosa/docker-cgp
+    container_name: cgp
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - /var/lib/collectd/rrd:/var/lib/collectd/rrd:ro
+    ports:
+      - 8085:80
+    healthcheck:
+      test: "curl -ILXGET http://localhost"
+    restart: unless-stopped
+
   ddclient:
     image: linuxserver/ddclient
     container_name: ddclient
