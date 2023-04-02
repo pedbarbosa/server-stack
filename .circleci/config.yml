@@ -1,0 +1,12 @@
+version: 2.1
+
+tests:
+  docker:
+    - image: ypereirareis/docker-compose
+  steps:
+    - checkout
+    - setup_remote_docker
+    - run:
+      name: Tests
+      command: echo "."
+
