@@ -1,0 +1,68 @@
+#!/usr/bin/env bash
+
+patch_alpine() {
+    docker exec -it "$CONTAINER" sh -c 'apk update'
+    ITEMS=$(docker exec -it "$CONTAINER" sh -c 'apk -u list' | wc -l)
+    if [[ "$ITEMS" -gt 0 ]]; then
+        docker exec -it "$CONTAINER" sh -c "apk upgrade && find /usr/lib -regex '^.*\(__pycache__\|\.py[co]\)$' -delete && rm -rf /var/cache/apk/*" && \
+        echo "Restarting container "$CONTAINER" after installing updates" && \
+        docker restart "$CONTAINER"
+    fi
+}
+
+patch_debian() {
+    docker exec -it "$CONTAINER" sh -c 'apt update'
+    ITEMS=$(docker exec -it "$CONTAINER" sh -c 'apt list --upgradable 2>/dev/null' | grep upgradable | wc -l)
+    if [[ "$ITEMS" -gt 0 ]]; then
+        docker exec -it "$CONTAINER" sh -c 'apt upgrade -y && apt clean autoclean && apt autoremove -y' && \
+        echo "Restarting container "$CONTAINER" after installing updates" && \
+        docker restart "$CONTAINER"
+    fi
+}
+
+find_release() {
+    OS_RELEASE=$(docker exec -it "$CONTAINER" sh -c 'cat /etc/os-release')
+    RELEASE=$(echo "$OS_RELEASE" | awk -F= '$1=="ID" { print $2 ;}' | tr -d '[:cntrl:]')
+
+    # If /etc/os-release wasn't present, check with uname
+    if [[ -z "$RELEASE" ]]; then
+        OS_RELEASE=$(docker exec -it "$CONTAINER" sh -c 'uname -r')
+        if [[ "$OS_RELEASE" == *generic* ]]; then
+            RELEASE="generic"
+        else
+            echo "ERROR: Unexpected release type '$OS_RELEASE' for container '$CONTAINER'!"
+            exit 1
+        fi
+    fi
+
+    unset $OS_RELEASE
+}
+
+
+check_if_generic() {
+    GENERIC_CHECK=$(docker exec -it "$CONTAINER" sh -c 'uname -r')
+    RELEASE=$(echo "$OS_RELEASE" | awk -F= '$1=="ID" { print $2 ;}' | tr -d '[:cntrl:]')
+}
+
+get_release_and_patch_server() {
+    find_release
+    if [[ ! -z "$RELEASE" ]]; then
+        echo -e "\nContainer '$CONTAINER' is running OS release '$RELEASE'.\n"
+        if [[ "$RELEASE" == 'alpine' || "$RELEASE" == 'generic' ]]; then
+            patch_alpine
+        elif [[ "$RELEASE" == 'debian' || "$RELEASE" == 'ubuntu' ]]; then
+            patch_debian
+        else
+            echo "ERROR: Release type '$RELEASE' for container '$CONTAINER' is not currently supported!"
+        fi
+    else
+        echo "ERROR: Failed to retrieve release for '$CONTAINER'!"
+    fi
+    unset $RELEASE
+}
+
+for CONTAINER in $(docker ps --format "{{.Names}}"); do
+    get_release_and_patch_server
+done
+
+unset $CONTAINER

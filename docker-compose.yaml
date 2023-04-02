@@ -1,32 +1,24 @@
 version: "3"
 services:
   vpn:
-    image: bubuntux/nordvpn
+    image: ghcr.io/bubuntux/nordlynx
     network_mode: bridge
     container_name: nordvpn
     cap_add:
       - NET_ADMIN
-      - SYS_MODULE
-    sysctls:
-      - net.ipv4.conf.all.rp_filter=2
-    devices:
-      - /dev/net/tun
     environment:
-      - "USER=${NORDVPN_USER}" # Required
-      - "PASS=${NORDVPN_PASS}"
-      - DEBUG=on
-      - TECHNOLOGY=NordLynx
-      - "NETWORK=${MAIN_NETWORK}"
-    volumes:
-      - /etc/localtime:/etc/localtime:ro
+      - "PRIVATE_KEY=${NORDLYNX_KEY}"
+      - "NET_LOCAL=${MAIN_NETWORK}"
+      - "TZ=${TIMEZONE}"
+      - DNS=8.8.8.8,8.8.4.4
     ports:
-      - 8082:80
+      - 8082:8080
     healthcheck:
       test: "curl -ILXGET https://www.google.com"
     restart: always
 
   rutorrent:
-    image: pedbarbosa/docker-rutorrent
+    image: crazymax/rtorrent-rutorrent:latest
     network_mode: service:vpn
     container_name: rutorrent
     depends_on:
@@ -36,10 +28,11 @@ services:
       - PGID=1000
       - "TZ=${TIMEZONE}"
     volumes:
-      - ./rutorrent:/config
+      - ./rtorrent-rutorrent:/data
       - ./downloads:/downloads
+      - /backup/rutorrent:/backup
     healthcheck:
-      test: "curl -ILXGET https://www.google.com && curl -ILXGET http://127.0.0.1:80"
+      test: "curl -ILXGET https://www.google.com && curl -ILXGET http://127.0.0.1:8080"
     restart: always
 
   autoheal:
@@ -61,7 +54,7 @@ services:
       - 8085:80
     healthcheck:
       test: "curl -ILXGET http://localhost"
-    restart: unless-stopped
+    restart: always
 
   ddclient:
     image: linuxserver/ddclient
@@ -74,20 +67,18 @@ services:
       - ./ddclient/ddclient.conf:/config/ddclient.conf
     restart: always
 
-  googlehomekodi:
-    image: omertu/googlehomekodi
-    container_name: googlehomekodi
-    environment:
-      - "KODI_PROTOCOL=${KODI_PROTOCOL}"
-      - "KODI_IP=${KODI_IP}"
-      - "KODI_PORT=${KODI_PORT}"
-      - "KODI_USER=${KODI_USER}"
-      - "KODI_PASSWORD=${KODI_PASS}"
-      - "AUTH_TOKEN=${IFTTT_TOKEN}"
+  homeassistant:
+    image: homeassistant/home-assistant:latest
+    container_name: homeassistant
+    depends_on:
+      - mariadb
     volumes:
       - /etc/localtime:/etc/localtime:ro
+      - ./homeassistant:/config
     ports:
-      - "8099:8099"
+      - 8123:8123
+    healthcheck:
+      test: "curl -ILXGET http://localhost:8123"
     restart: always
 
   jellyfin:
@@ -97,15 +88,18 @@ services:
       - PUID=1000
       - PGID=1000
       - "TZ=${TIMEZONE}"
+      - "JELLYFIN_PublishedServerUrl=${JELLYFIN_SERVER}"
     volumes:
       - ./jellyfin:/config
       - "${VIDEO_PATH}/Movies:/data/movies"
       - "${VIDEO_PATH}/TV:/data/tvshows"
     ports:
       - 8096:8096
+      - 1900:1900/udp
+      - 7359:7359/udp
     devices:
       - /dev/dri:/dev/dri
-    restart: unless-stopped
+    restart: always
 
   mariadb:
     image: linuxserver/mariadb
@@ -115,13 +109,14 @@ services:
       - PGID=1000
       - "TZ=${TIMEZONE}"
       - "MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}"
+      - "MYSQL_PWD=${MYSQL_ROOT_PASSWORD}"
     volumes:
       - ./mariadb:/config
     ports:
       - 3306:3306
     healthcheck:
-      test: ["CMD", "mysqladmin" ,"ping", "-h", "localhost"]
-      timeout: 20s
+      test: ["CMD-SHELL", "mysqladmin ping"]
+      timeout: 2s
       retries: 10
     restart: always
 
@@ -130,12 +125,25 @@ services:
     container_name: postfix
     ports:
       - "25:25"
+      - "587:587"
     volumes:
       - /etc/localtime:/etc/localtime:ro
       - ./postfix:/config
       - /var/log/maillog:/var/log/maillog
-    healthcheck:
-      test: "nc -vz 127.0.0.1 25"
+    restart: always
+
+  projectsend:
+    image: lscr.io/linuxserver/projectsend:latest
+    container_name: projectsend
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - "TZ=${TIMEZONE}"
+    volumes:
+      - ./projectsend/config:/config
+      - ./projectsend/data:/data
+    ports:
+      - 8083:80
     restart: always
 
   proxy:
@@ -167,6 +175,8 @@ services:
       - 8081:8081
     healthcheck:
       test: "wget http://localhost:8081 --spider -q"
+      timeout: 5s
+      retries: 10
     restart: always
 
   smokeping:
@@ -198,13 +208,15 @@ services:
       - "SUBDOMAINS=${SWAG_SUBDOMAINS}"
       - VALIDATION=dns
       - DNSPLUGIN=cloudflare
+      - PROPAGATION=20
       - "EMAIL=${SWAG_EMAIL}"
     volumes:
       - ./swag:/config
-    restart: unless-stopped
+    restart: always
 
   syncthing:
     image: linuxserver/syncthing
+    network_mode: host
     container_name: syncthing
     environment:
       - PUID=1000
@@ -212,12 +224,18 @@ services:
       - "TZ=${TIMEZONE}"
     volumes:
       - ./syncthing:/config
-      - "${PHOTOS_PATH}:/photos"
       - "${SYNCTHING_PATH}:/targets"
+    restart: always
+
+  vaultwarden:
+    image: vaultwarden/server:latest
+    container_name: vaultwarden
+    environment:
+      - "ADMIN_TOKEN=${VAULT_TOKEN}"
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - ./vaultwarden:/data/
     ports:
-      - 8384:8384
-      - 22000:22000/tcp
-      - 22000:22000/udp
-      - 21027:21027/udp
-    restart: unless-stopped
+      - 8084:80
+    restart: always
 

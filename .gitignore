@@ -4,13 +4,17 @@
 # Container config folders
 ddclient/
 downloads/
+homeassistant/
 jellyfin/
 mariadb/
 postfix/
+projectsend/
 proxy/
-rutorrent/
+rtorrent-rutorrent/
 sickchill/
 smokeping/
 swag/
 syncthing/
+vaultwarden/
+
 
