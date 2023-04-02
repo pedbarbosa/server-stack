@@ -12,5 +12,11 @@ jobs:
         - checkout
         - setup_remote_docker
         - run:
+            name: Set .env file
+            command: cp .env_example .env
+        - run:
+            name: Set variables in .env file
+            command: sed -i 's/^TIMEZONE=/TIMEZONE=Etc\/UTC/g' .env
+        - run:
             name: Test
             command: docker ps -a; docker-compose pull; docker ps -a; docker-compose up -d
