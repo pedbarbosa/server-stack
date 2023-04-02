@@ -1,12 +1,12 @@
 version: 2.1
 
-tests:
-  docker:
-    - image: ypereirareis/docker-compose
-  steps:
-    - checkout
-    - setup_remote_docker
-    - run:
-      name: Tests
-      command: echo "."
+orbs:
+  docker: circleci/docker@2.2.0
 
+jobs:
+  build:
+    docker:
+      - image: cimg/base:stable
+    steps:
+      - docker/install-docker-compose
+      - checkout
