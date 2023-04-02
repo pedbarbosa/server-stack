@@ -12,4 +12,4 @@ jobs:
         - setup_remote_docker
         - run:
             name: Test
-            command: docker ps -a
+            command: docker ps -a; docker-compose pull; docker ps -a; docker-compose up -d
