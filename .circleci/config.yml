@@ -6,10 +6,10 @@ orbs:
 jobs:
   build:
     docker:
-      - image: cimg/base:stable
+        - image: ypereirareis/docker-compose
     steps:
-      - docker/install-docker-compose
-      - checkout
-      - run:
-        name: Test
-        command: echo "."
+        - checkout
+        - setup_remote_docker
+        - run:
+            name: Test
+            command: docker ps -a
