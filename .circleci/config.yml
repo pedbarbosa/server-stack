@@ -8,6 +8,7 @@ jobs:
     docker:
         - image: ypereirareis/docker-compose
     steps:
+        - docker/install-docker-compose
         - checkout
         - setup_remote_docker
         - run:
