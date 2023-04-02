@@ -10,3 +10,6 @@ jobs:
     steps:
       - docker/install-docker-compose
       - checkout
+      - run:
+        name: Test
+        command: echo "."
