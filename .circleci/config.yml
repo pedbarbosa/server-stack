@@ -6,10 +6,21 @@ orbs:
 jobs:
   build:
     docker:
-      - image: cimg/base:stable
+        - image: ypereirareis/docker-compose
     steps:
-      - docker/install-docker-compose
-      - checkout
-      - run:
-        name: Test
-        command: echo "."
+        - docker/install-docker-compose
+        - checkout
+        - setup_remote_docker
+        - run:
+            name: Set .env file
+            command: cp .env_example .env
+        - run:
+            name: Set variables in .env file
+            command: sed -i 's/^TIMEZONE=/TIMEZONE=Etc\/UTC/g' .env && sed -i 's/^VIDEO_PATH=/VIDEO_PATH=.\/video/g' .env && sed -i 's/^SYNCTHING_PATH=/SYNCTHING_PATH=.\/syncthing/g' .env
+        - run:
+            name: Create required directories
+            command: mkdir -p ./proxy/certs && touch ./proxy/nginx.conf
+        - run:
+            name: Test
+            command: docker ps -a; docker-compose pull; docker ps -a; docker-compose up -d
+
