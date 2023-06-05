@@ -18,12 +18,6 @@ jobs:
             name: Set variables in .env file
             command: sed -i 's/^TIMEZONE=/TIMEZONE=Etc\/UTC/g' .env && sed -i 's/^VIDEO_PATH=/VIDEO_PATH=.\/video/g' .env && sed -i 's/^SYNCTHING_PATH=/SYNCTHING_PATH=.\/syncthing/g' .env
         - run:
-            name: Remove device lines out of jellyfin configuration
-            command: sed -i 's/devices://g;s/- \/dev\/dri:\/dev\/dri//g' docker-compose.yaml
-        - run:
-            name: Create required directories
-            command: mkdir -p ./proxy/certs && echo "user  nginx;" > ./proxy/nginx.conf
-        - run:
             name: List contents
             command: find .
         - run:
@@ -31,5 +25,5 @@ jobs:
             command: docker-compose pull -q
         - run:
             name: Launch some containers
-            command: docker-compose up -d vpn rutorrent autoheal cgp ddclient mariadb postfix proxy
+            command: docker-compose up -d vpn rutorrent autoheal cgp ddclient mariadb postfix sickchill smokeping swag
 
