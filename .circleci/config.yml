@@ -19,7 +19,7 @@ jobs:
             command: sed -i 's/^TIMEZONE=/TIMEZONE=Etc\/UTC/g' .env && sed -i 's/^VIDEO_PATH=/VIDEO_PATH=.\/video/g' .env && sed -i 's/^SYNCTHING_PATH=/SYNCTHING_PATH=.\/syncthing/g' .env
         - run:
             name: Remove device lines out of jellyfin configuration
-            command: sed -i '102,103d' docker-compose.yaml
+            command: sed -i 's/devices://g;s/- \/dev\/dri:\/dev\/dri//g' docker-compose.yaml
         - run:
             name: Pull all containers
             command: docker-compose pull -q
