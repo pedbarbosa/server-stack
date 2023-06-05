@@ -21,6 +21,9 @@ jobs:
             name: Remove device lines out of jellyfin configuration
             command: sed -i 's/devices://g;s/- \/dev\/dri:\/dev\/dri//g' docker-compose.yaml
         - run:
+            name: Create required directories
+            command: mkdir -p ./proxy/certs && touch ./proxy/nginx.conf
+        - run:
             name: Pull all containers
             command: docker-compose pull -q
         - run:
