@@ -22,5 +22,5 @@ jobs:
             command: docker-compose pull -q
         - run:
             name: Launch some containers
-            command: docker-compose up -d vpn rutorrent autoheal cgp ddclient jellyfin mariadb
+            command: docker-compose up -d vpn rutorrent autoheal cgp ddclient mariadb postfix
 
