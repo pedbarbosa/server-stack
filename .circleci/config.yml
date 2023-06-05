@@ -24,6 +24,9 @@ jobs:
             name: Create required directories
             command: mkdir -p ./proxy/certs && touch ./proxy/nginx.conf
         - run:
+            name: List contents
+            command: find .
+        - run:
             name: Pull all containers
             command: docker-compose pull -q
         - run:
