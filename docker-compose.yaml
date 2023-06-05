@@ -84,11 +84,13 @@ services:
   jellyfin:
     image: linuxserver/jellyfin
     container_name: jellyfin
+    runtime: nvidia
     environment:
       - PUID=1000
       - PGID=1000
       - "TZ=${TIMEZONE}"
       - "JELLYFIN_PublishedServerUrl=${JELLYFIN_SERVER}"
+      - NVIDIA_VISIBLE_DEVICES=all
     volumes:
       - ./jellyfin:/config
       - "${VIDEO_PATH}/Movies:/data/movies"
