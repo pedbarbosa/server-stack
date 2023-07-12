@@ -18,12 +18,6 @@ jobs:
             name: Set variables in .env file
             command: sed -i 's/^TIMEZONE=/TIMEZONE=Etc\/UTC/g' .env && sed -i 's/^VIDEO_PATH=/VIDEO_PATH=.\/video/g' .env && sed -i 's/^SYNCTHING_PATH=/SYNCTHING_PATH=.\/syncthing/g' .env
         - run:
-            name: List contents
-            command: find .
-        - run:
-            name: Check Docker status and clean environment
-            command: docker ps -a && docker volume ls && docker volume rm $(docker volume ls -q)
-        - run:
             name: Pull all containers
             command: docker-compose pull -q
         - run:
