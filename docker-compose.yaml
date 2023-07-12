@@ -28,7 +28,8 @@ services:
       - PGID=1000
       - "TZ=${TIMEZONE}"
     volumes:
-      - ./rtorrent-rutorrent:/data
+      - ./rtorrent-rutorrent/data:/data
+      - ./rtorrent-rutorrent/css/style.css:/var/www/rutorrent/css/style.css:ro
       - ./downloads:/downloads
     healthcheck:
       test: "curl -ILXGET https://www.google.com && curl -ILXGET http://127.0.0.1:8080"
@@ -69,13 +70,12 @@ services:
   homeassistant:
     image: homeassistant/home-assistant:latest
     container_name: homeassistant
+    network_mode: host
     depends_on:
       - mariadb
     volumes:
       - /etc/localtime:/etc/localtime:ro
       - ./homeassistant:/config
-    ports:
-      - 8123:8123
     healthcheck:
       test: "curl -ILXGET http://localhost:8123"
     restart: always
@@ -134,7 +134,7 @@ services:
     restart: always
 
   projectsend:
-    image: lscr.io/linuxserver/projectsend:latest
+    image: lscr.io/linuxserver/projectsend
     container_name: projectsend
     environment:
       - PUID=1000
@@ -217,8 +217,8 @@ services:
 
   syncthing:
     image: linuxserver/syncthing
-    network_mode: host
     container_name: syncthing
+    network_mode: host
     environment:
       - PUID=1000
       - PGID=1000

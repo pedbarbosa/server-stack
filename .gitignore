@@ -10,7 +10,7 @@ mariadb/
 postfix/
 projectsend/
 proxy/
-rtorrent-rutorrent/
+rtorrent-rutorrent/data/
 sickchill/
 smokeping/
 swag/
