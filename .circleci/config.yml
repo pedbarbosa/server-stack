@@ -21,6 +21,9 @@ jobs:
             name: List contents
             command: find .
         - run:
+            name: Check Docker status and clean environment
+            command: docker ps -a && docker volume ls && docker volume rm $(docker volume ls -q)
+        - run:
             name: Pull all containers
             command: docker-compose pull -q
         - run:
