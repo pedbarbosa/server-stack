@@ -30,7 +30,7 @@ services:
     volumes:
       - ./rtorrent-rutorrent/data:/data
       - ./rtorrent-rutorrent/css/style.css:/var/www/rutorrent/css/style.css:ro
-      - ./downloads:/downloads
+      - "${DOWNLOADS_PATH}:/downloads"
     healthcheck:
       test: "curl -ILXGET https://www.google.com && curl -ILXGET http://127.0.0.1:8080"
     restart: always
@@ -98,8 +98,8 @@ services:
       - 8096:8096
       - 1900:1900/udp
       - 7359:7359/udp
-    
-      
+    healthcheck:
+      test: "curl -ILXGET http://localhost:8096"
     restart: always
 
   mariadb:
@@ -145,6 +145,8 @@ services:
       - ./projectsend/data:/data
     ports:
       - 8083:80
+    healthcheck:
+      test: "curl -ILXGET http://localhost"
     restart: always
 
   proxy:
@@ -170,7 +172,7 @@ services:
       - "TZ=${TIMEZONE}"
     volumes:
       - ./sickchill:/config
-      - ./downloads:/downloads
+      - "${DOWNLOADS_PATH}:/downloads"
       - "${VIDEO_PATH}:/video"
     ports:
       - 8081:8081
@@ -226,6 +228,8 @@ services:
     volumes:
       - ./syncthing:/config
       - "${SYNCTHING_PATH}:/targets"
+    healthcheck:
+      test: "curl -ILXGET http://localhost:8384"
     restart: always
 
   vaultwarden:
@@ -238,5 +242,7 @@ services:
       - ./vaultwarden:/data/
     ports:
       - 8084:80
+    healthcheck:
+      test: "curl -ILXGET http://localhost"
     restart: always
 

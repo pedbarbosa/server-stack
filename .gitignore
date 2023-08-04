@@ -3,7 +3,6 @@
 
 # Container config folders
 ddclient/
-downloads/
 homeassistant/
 jellyfin/
 mariadb/
@@ -16,5 +15,4 @@ smokeping/
 swag/
 syncthing/
 vaultwarden/
-
 
