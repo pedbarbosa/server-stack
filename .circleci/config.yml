@@ -27,6 +27,9 @@ jobs:
             name: Set Syncthing path variable in .env file
             command: sed -i 's/^SYNCTHING_PATH=/SYNCTHING_PATH=.\/syncthing/g' .env
         - run:
+            name: Debugging .env
+            command: cat .env
+        - run:
             name: Pull all containers
             command: docker-compose pull -q
         - run:
