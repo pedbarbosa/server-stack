@@ -18,14 +18,17 @@ jobs:
             name: Set timezone variable in .env file
             command: sed -i 's/^TIMEZONE=/TIMEZONE=Etc\/UTC/g' .env
         - run:
-            name: Set video path variable in .env file
-            command: sed -i 's/^VIDEO_PATH=/VIDEO_PATH=.\/video/g' .env 
-        - run:
-            name: Set downloads path variable in .env file
-            command: sed -i 's/^DOWNLOADS_PATH=/DOWNLOADS_PATH=.\/downloads/g' .env
+            name: Set containers path variable in .env file
+            command: sed -i 's/^CONTAINERS_PATH=/CONTAINERS_PATH=.\/containers/g' .env 
         - run:
             name: Set Syncthing path variable in .env file
             command: sed -i 's/^SYNCTHING_PATH=/SYNCTHING_PATH=.\/syncthing/g' .env
+        - run:
+            name: Set torrents path variable in .env file
+            command: sed -i 's/^TORRENTS_PATH=/TORRENTS_PATH=.\/torrents/g' .env
+        - run:
+            name: Set video path variable in .env file
+            command: sed -i 's/^VIDEO_PATH=/VIDEO_PATH=.\/video/g' .env 
         - run:
             name: Pull all containers
             command: docker-compose pull -q
