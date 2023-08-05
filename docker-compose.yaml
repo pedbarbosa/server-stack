@@ -28,9 +28,9 @@ services:
       - PGID=1000
       - "TZ=${TIMEZONE}"
     volumes:
-      - ./rtorrent-rutorrent/data:/data
-      - ./rtorrent-rutorrent/css/style.css:/var/www/rutorrent/css/style.css:ro
-      - "${DOWNLOADS_PATH}:/downloads"
+      - ./config/rutorrent_style.css:/var/www/rutorrent/css/style.css:ro
+      - "${CONTAINERS_PATH}/rutorrent:/data"
+      - "${TORRENTS_PATH}:/downloads"
     healthcheck:
       test: "curl -ILXGET https://www.google.com && curl -ILXGET http://127.0.0.1:8080"
     restart: always
@@ -64,7 +64,7 @@ services:
       - PGID=1000
       - "TZ=${TIMEZONE}"
     volumes:
-      - ./ddclient/ddclient.conf:/config/ddclient.conf
+      - ./config/ddclient.conf:/config/ddclient.conf
     restart: always
 
   homeassistant:
@@ -75,7 +75,7 @@ services:
       - mariadb
     volumes:
       - /etc/localtime:/etc/localtime:ro
-      - ./homeassistant:/config
+      - "${CONTAINERS_PATH}/homeassistant:/config"
     healthcheck:
       test: "curl -ILXGET http://localhost:8123"
     restart: always
@@ -91,7 +91,7 @@ services:
       - "JELLYFIN_PublishedServerUrl=${JELLYFIN_SERVER}"
       - NVIDIA_VISIBLE_DEVICES=all
     volumes:
-      - ./jellyfin:/config
+      - "${CONTAINERS_PATH}/jellyfin:/config"
       - "${VIDEO_PATH}/Movies:/data/movies"
       - "${VIDEO_PATH}/TV:/data/tvshows"
     ports:
@@ -112,7 +112,7 @@ services:
       - "MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}"
       - "MYSQL_PWD=${MYSQL_ROOT_PASSWORD}"
     volumes:
-      - ./mariadb:/config
+      - "${CONTAINERS_PATH}/mariadb:/config"
     ports:
       - 3306:3306
     healthcheck:
@@ -129,8 +129,8 @@ services:
       - "587:587"
     volumes:
       - /etc/localtime:/etc/localtime:ro
-      - ./postfix:/config
       - /var/log/maillog:/var/log/maillog
+      - "${CONTAINERS_PATH}/postfix:/config"
     restart: always
 
   projectsend:
@@ -141,8 +141,8 @@ services:
       - PGID=1000
       - "TZ=${TIMEZONE}"
     volumes:
-      - ./projectsend/config:/config
-      - ./projectsend/data:/data
+      - "${CONTAINERS_PATH}/projectsend/config:/config"
+      - "${CONTAINERS_PATH}/projectsend/data:/data"
     ports:
       - 8083:80
     healthcheck:
@@ -154,10 +154,10 @@ services:
     container_name: proxy
     volumes:
       - /etc/localtime:/etc/localtime:ro
-      - ./proxy/.htpasswd:/etc/nginx/.htpasswd:ro
-      - ./proxy/certs:/etc/nginx/certs:ro
-      - ./proxy/nginx.conf:/etc/nginx/nginx.conf:ro
-      - ./proxy/index.html:/var/www/html/index.html:ro
+      - "${CONTAINERS_PATH}/proxy/.htpasswd:/etc/nginx/.htpasswd:ro"
+      - "${CONTAINERS_PATH}/proxy/certs:/etc/nginx/certs:ro"
+      - "${CONTAINERS_PATH}/proxy/nginx.conf:/etc/nginx/nginx.conf:ro"
+      - "${CONTAINERS_PATH}/proxy/index.html:/var/www/html/index.html:ro"
     ports:
       - 80:80
       - 443:443
@@ -171,8 +171,8 @@ services:
       - PGID=1000
       - "TZ=${TIMEZONE}"
     volumes:
-      - ./sickchill:/config
-      - "${DOWNLOADS_PATH}:/downloads"
+      - "${CONTAINERS_PATH}/sickchill:/config"
+      - "${TORRENTS_PATH}:/torrents"
       - "${VIDEO_PATH}:/video"
     ports:
       - 8081:8081
@@ -190,8 +190,8 @@ services:
       - PGID=1000
       - "TZ=${TIMEZONE}"
     volumes:
-      - ./smokeping/config:/config
-      - ./smokeping/data:/data
+      - "${CONTAINERS_PATH}/smokeping/config:/config"
+      - "${CONTAINERS_PATH}/smokeping/data:/data"
     ports:
       - 8098:80
     healthcheck:
@@ -214,7 +214,7 @@ services:
       - PROPAGATION=20
       - "EMAIL=${SWAG_EMAIL}"
     volumes:
-      - ./swag:/config
+      - "${CONTAINERS_PATH}/swag:/config"
     restart: always
 
   syncthing:
@@ -226,7 +226,7 @@ services:
       - PGID=1000
       - "TZ=${TIMEZONE}"
     volumes:
-      - ./syncthing:/config
+      - "${CONTAINERS_PATH}/syncthing:/config"
       - "${SYNCTHING_PATH}:/targets"
     healthcheck:
       test: "curl -ILXGET http://localhost:8384"
@@ -239,7 +239,7 @@ services:
       - "ADMIN_TOKEN=${VAULT_TOKEN}"
     volumes:
       - /etc/localtime:/etc/localtime:ro
-      - ./vaultwarden:/data/
+      - "${CONTAINERS_PATH}/vaultwarden:/data"
     ports:
       - 8084:80
     healthcheck:

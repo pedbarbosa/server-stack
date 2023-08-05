@@ -1,18 +1,6 @@
 # Environment variables
 .env
 
-# Container config folders
-ddclient/
-homeassistant/
-jellyfin/
-mariadb/
-postfix/
-projectsend/
-proxy/
-rtorrent-rutorrent/data/
-sickchill/
-smokeping/
-swag/
-syncthing/
-vaultwarden/
+# Protected configuration
+config/ddclient.conf
 
