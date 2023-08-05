@@ -1,0 +1,18 @@
+# Default global variables
+daemon=60
+syslog=yes
+# mail=root
+# mail-failure=root
+# pid=/var/run/ddclient.pid
+ssl=yes
+
+# CloudFlare
+protocol=cloudflare
+use=web
+web=checkip.amazonaws.com
+zone=<DOMAIN>
+ttl=1
+login=<CLOUDFLARE_EMAIL>
+password=<CLOUDFLARE_TOKEN>
+<CLOUDFLARE_URL_TO_UPDATE>
+

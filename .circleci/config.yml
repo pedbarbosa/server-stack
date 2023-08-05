@@ -15,15 +15,24 @@ jobs:
             name: Set .env file
             command: cp .env_example .env
         - run:
-            name: Set variables in .env file
-            command: sed -i 's/^TIMEZONE=/TIMEZONE=Etc\/UTC/g' .env && sed -i 's/^VIDEO_PATH=/VIDEO_PATH=.\/video/g' .env && sed -i 's/^SYNCTHING_PATH=/SYNCTHING_PATH=.\/syncthing/g' .env
+            name: Set timezone variable in .env file
+            command: sed -i 's/^TIMEZONE=/TIMEZONE=Etc\/UTC/g' .env
         - run:
-            name: List contents
-            command: find .
+            name: Set containers path variable in .env file
+            command: sed -i 's/^CONTAINERS_PATH=/CONTAINERS_PATH=.\/containers/g' .env 
+        - run:
+            name: Set Syncthing path variable in .env file
+            command: sed -i 's/^SYNCTHING_PATH=/SYNCTHING_PATH=.\/syncthing/g' .env
+        - run:
+            name: Set torrents path variable in .env file
+            command: sed -i 's/^TORRENTS_PATH=/TORRENTS_PATH=.\/torrents/g' .env
+        - run:
+            name: Set video path variable in .env file
+            command: sed -i 's/^VIDEO_PATH=/VIDEO_PATH=.\/video/g' .env 
         - run:
             name: Pull all containers
             command: docker-compose pull -q
         - run:
             name: Launch some containers
-            command: docker-compose up -d vpn rutorrent autoheal cgp ddclient mariadb postfix sickchill smokeping swag
+            command: docker-compose up -d vpn autoheal cgp ddclient mariadb postfix sickchill smokeping swag
 
