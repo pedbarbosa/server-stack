@@ -63,9 +63,9 @@ DOMAIN=<your_domain_name>
 crontab -l | { cat; echo -e "# Certificate checker\n0 6 * * * DOMAIN=$DOMAIN $pwd/update_certs"; } | crontab -
 ```
 
-### nvenc for jellyfin
+### Jellyfin with nvenc transcoding
 
-To use nvenc transcoding in jellyfin, on an Ubuntu host run the following:
+To use nvenc transcoding in Jellyfin, on an Ubuntu host run the following:
 
 Set up the nvidia-docker repository:
 
