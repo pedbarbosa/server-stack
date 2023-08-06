@@ -20,7 +20,7 @@ as well as the following images for support services:
   - [Smokeping](https://hub.docker.com/r/linuxserver/smokeping) - network statistics
   - [Swag](https://hub.docker.com/r/linuxserver/swag) - SSL certificate handler
 
-To use the stack, make sure to create a .env file with the required variables
+To use the stack, make sure to create a .env file with the required variables:
 
 ```
 cp .env_example .env
@@ -31,6 +31,36 @@ and then launch it using:
 
 ```
 docker compose up -d
+```
+
+### Container security patcher
+
+To update all containers' packages to their latest versions, run the script below. Please note that ALL containers running on the server will have their packages upgraded!
+
+```
+./patch_containers
+```
+
+To run it periodically, run the following to add it to your crontab:
+
+```
+crontab -l | { cat; echo -e "# Container patcher\n0 5 * * * $pwd/patch_containers"; } | crontab -
+```
+
+### Certificate checker for Swag
+
+To ensure the Nginx proxy is using the latest Swag certificate, run the following:
+
+```
+DOMAIN=<your_domain_name>
+./update_certs
+```
+
+To run it periodically, run the following to add it to your crontab:
+
+```
+DOMAIN=<your_domain_name>
+crontab -l | { cat; echo -e "# Certificate checker\n0 6 * * * DOMAIN=$DOMAIN $pwd/update_certs"; } | crontab -
 ```
 
 ### nvenc for jellyfin
@@ -44,7 +74,7 @@ curl -s -L https://nvidia.github.io/nvidia-docker/gpgkey | apt-key add -
 curl -s -L https://nvidia.github.io/nvidia-docker/ubuntu22.04/nvidia-docker.list > /etc/apt/sources.list.d/nvidia-docker.list
 ```
 
-Install the NVidia container toolkit and configure it:
+Install the Nvidia container toolkit and configure it:
 
 ```
 apt update
