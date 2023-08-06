@@ -1,0 +1,37 @@
+#!/usr/bin/env zsh
+
+if [[ -z "${DOMAIN}" ]]; then
+    echo "Variable 'DOMAIN' isn't set, quiting ..."
+    exit 1
+fi
+
+CONTAINERS_PATH=$(grep 'CONTAINERS_PATH' .env | cut -d '=' -f2)
+if [ -z "$CONTAINERS_PATH" ]; then
+    echo "Variable 'CONTAINERS_PATH' isn't set, quiting ..."
+    exit 1
+fi
+
+PROXY_PATH=$CONTAINERS_PATH/proxy/certs/
+SWAG_PATH=$CONTAINERS_PATH/swag/etc/letsencrypt/live/$DOMAIN
+ROUTER_PATH=router:/etc/config/certs/
+
+# Check local certificates expiration dates
+if ! SWAG_EXPIRY=$(openssl x509 -enddate -noout -in "$SWAG_PATH/cert.pem"); then
+    echo "LetsEncrypt certificate missing at $SWAG_PATH/cert.pem, quiting ..." && exit 1
+fi
+if ! PROXY_EXPIRY=$(openssl x509 -enddate -noout -in "$PROXY_PATH/cert.pem"); then
+    echo "Proxy certificate missing at $PROXY_PATH/cert.pem, quiting ..." && exit 1
+fi
+if ! [[ $SWAG_EXPIRY == $PROXY_EXPIRY ]]; then
+    echo "LetsEncrypt certificate has been updated, or Proxy certificate date does not match: ${PROXY_EXPIRY}"
+    cp "$SWAG_PATH/*.pem" "$PROXY_PATH" && docker restart proxy && echo "Certficate updated, proxy restarted."
+fi
+
+# Check remote certificate expiration date
+if ! ROUTER_EXPIRY=$(openssl s_client -showcerts -servername router.$DOMAIN -connect router.$DOMAIN:443 2>/dev/null | openssl x509 -inform pem -noout -enddate); then
+    echo "Could not get certificate from 'https://router.$DOMAIN', quiting ..." && exit 1
+fi
+if ! [[ $SWAG_EXPIRY == $ROUTER_EXPIRY ]]; then
+    echo "LetsEncrypt certificate has been updated, or Router certificate date does not match: ${ROUTER_EXPIRY}"
+    scp "$SWAG_PATH/*.pem" "$ROUTER_PATH" && ssh router '/etc/init.d/uhttpd restart' && echo "Certficate updated, router's uhttpd service restarted."
+fi
