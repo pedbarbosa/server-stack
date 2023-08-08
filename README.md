@@ -70,8 +70,8 @@ To use nvenc transcoding in Jellyfin, on an Ubuntu host run the following:
 Set up the nvidia-docker repository:
 
 ```
-curl -s -L https://nvidia.github.io/nvidia-docker/gpgkey | apt-key add -
-curl -s -L https://nvidia.github.io/nvidia-docker/ubuntu22.04/nvidia-docker.list > /etc/apt/sources.list.d/nvidia-docker.list
+curl -s -L https://nvidia.github.io/nvidia-docker/gpgkey | sudo gpg --dearmour -o /usr/share/keyrings/nvidia.gpg
+curl -s -L https://nvidia.github.io/nvidia-docker/ubuntu22.04/nvidia-docker.list | sed -e 's/^deb/deb\ \[signed-by\=\/usr\/share\/keyrings\/nvidia.gpg\]/g' | sudo tee -a /etc/apt/sources.list.d/nvidia-docker.list > /dev/null
 ```
 
 Install the Nvidia container toolkit and configure it:
