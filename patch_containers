@@ -1,12 +1,24 @@
 #!/usr/bin/env bash
 
+restart_container() {
+    echo "Restarting container "$CONTAINER" after installing updates" && \
+    docker restart "$CONTAINER"
+    if [[ "$CONTAINER" == 'mariadb' ]]; then
+        echo "Restarting dependent containers ..." && \
+        docker restart homeassistant
+    fi
+    if [[ "$CONTAINER" == 'nordvpn' ]]; then
+        echo "Restarting dependent containers ..." && \
+        docker restart rutorrent
+    fi
+}
+
 patch_alpine() {
     docker exec -it "$CONTAINER" sh -c 'apk update'
     ITEMS=$(docker exec -it "$CONTAINER" sh -c 'apk -u list' | wc -l)
     if [[ "$ITEMS" -gt 0 ]]; then
         docker exec -it "$CONTAINER" sh -c "apk upgrade && find /usr/lib -regex '^.*\(__pycache__\|\.py[co]\)$' -delete && rm -rf /var/cache/apk/*" && \
-        echo "Restarting container "$CONTAINER" after installing updates" && \
-        docker restart "$CONTAINER"
+        restart_container
     fi
 }
 
@@ -15,8 +27,7 @@ patch_debian() {
     ITEMS=$(docker exec -it "$CONTAINER" sh -c 'apt list --upgradable 2>/dev/null' | grep upgradable | wc -l)
     if [[ "$ITEMS" -gt 0 ]]; then
         docker exec -it "$CONTAINER" sh -c 'apt upgrade -y && apt clean autoclean && apt autoremove -y' && \
-        echo "Restarting container "$CONTAINER" after installing updates" && \
-        docker restart "$CONTAINER"
+        restart_container
     fi
 }
 
