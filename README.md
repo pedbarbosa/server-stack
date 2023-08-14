@@ -67,11 +67,14 @@ crontab -l | { cat; echo -e "# Certificate checker\n0 6 * * * DOMAIN=$DOMAIN $pw
 
 To use nvenc transcoding in Jellyfin, on an Ubuntu host run the following:
 
-Set up the nvidia-docker repository:
+Set up the libnvidia-container repository:
 
 ```
-curl -s -L https://nvidia.github.io/nvidia-docker/gpgkey | sudo gpg --dearmour -o /usr/share/keyrings/nvidia.gpg
-curl -s -L https://nvidia.github.io/nvidia-docker/ubuntu22.04/nvidia-docker.list | sed -e 's/^deb/deb\ \[signed-by\=\/usr\/share\/keyrings\/nvidia.gpg\]/g' | sudo tee -a /etc/apt/sources.list.d/nvidia-docker.list > /dev/null
+distribution=$(. /etc/os-release;echo $ID$VERSION_ID) \
+      && curl -fsSL https://nvidia.github.io/libnvidia-container/gpgkey | sudo gpg --dearmor -o /usr/share/keyrings/nvidia-container-toolkit-keyring.gpg \
+      && curl -s -L https://nvidia.github.io/libnvidia-container/$distribution/libnvidia-container.list | \
+            sed 's#deb https://#deb [signed-by=/usr/share/keyrings/nvidia-container-toolkit-keyring.gpg] https://#g' | \
+            sudo tee /etc/apt/sources.list.d/nvidia-container-toolkit.list
 ```
 
 Install the Nvidia container toolkit and configure it:
