@@ -25,7 +25,7 @@ if ! PROXY_EXPIRY=$(openssl x509 -enddate -noout -in "${PROXY_PATH}/cert.pem"); 
 fi
 if ! [[ $SWAG_EXPIRY == $PROXY_EXPIRY ]]; then
     echo "LetsEncrypt certificate has been updated, or Proxy certificate date does not match: $PROXY_EXPIRY"
-    cp "${SWAG_PATH}/*.pem" "$PROXY_PATH" && docker restart proxy && echo "Certficate updated, proxy restarted."
+    cp "${SWAG_PATH}"/*.pem "$PROXY_PATH" && docker restart proxy && echo "Certficate updated, proxy restarted."
 fi
 
 # Check remote certificate expiration date
@@ -34,5 +34,5 @@ if ! ROUTER_EXPIRY=$(openssl s_client -showcerts -servername router.${DOMAIN} -c
 fi
 if ! [[ $SWAG_EXPIRY == $ROUTER_EXPIRY ]]; then
     echo "LetsEncrypt certificate has been updated, or Router certificate date does not match: $ROUTER_EXPIRY"
-    scp "${SWAG_PATH}/*.pem" "$ROUTER_PATH" && ssh router '/etc/init.d/uhttpd restart' && echo "Certficate updated, router's uhttpd service restarted."
+    scp "${SWAG_PATH}"/*.pem "$ROUTER_PATH" && ssh router '/etc/init.d/uhttpd restart' && echo "Certficate updated, router's uhttpd service restarted."
 fi
