@@ -20,7 +20,7 @@ as well as the following images for support services:
   - [Smokeping](https://hub.docker.com/r/linuxserver/smokeping) - network statistics
   - [Swag](https://hub.docker.com/r/linuxserver/swag) - SSL certificate handler
 
-To use the stack, make sure to create a .env file with the required variables
+To use the stack, make sure to create a .env file with the required variables:
 
 ```
 cp .env_example .env
@@ -33,18 +33,51 @@ and then launch it using:
 docker compose up -d
 ```
 
-### nvenc for jellyfin
+### Container security patcher
 
-To use nvenc transcoding in jellyfin, on an Ubuntu host run the following:
-
-Set up the nvidia-docker repository:
+To update all containers' packages to their latest versions, run the script below. Please note that ALL containers running on the server will have their packages upgraded!
 
 ```
-curl -s -L https://nvidia.github.io/nvidia-docker/gpgkey | apt-key add -
-curl -s -L https://nvidia.github.io/nvidia-docker/ubuntu22.04/nvidia-docker.list > /etc/apt/sources.list.d/nvidia-docker.list
+./patch_containers
 ```
 
-Install the NVidia container toolkit and configure it:
+To run it periodically, run the following to add it to your crontab:
+
+```
+crontab -l | { cat; echo -e "# Container patcher\n0 5 * * * $pwd/patch_containers"; } | crontab -
+```
+
+### Certificate checker for Swag
+
+To ensure the Nginx proxy is using the latest Swag certificate, run the following:
+
+```
+DOMAIN=<your_domain_name>
+./update_certs
+```
+
+To run it periodically, run the following to add it to your crontab:
+
+```
+DOMAIN=<your_domain_name>
+crontab -l | { cat; echo -e "# Certificate checker\n0 6 * * * DOMAIN=$DOMAIN $pwd/update_certs"; } | crontab -
+```
+
+### Jellyfin with nvenc transcoding
+
+To use nvenc transcoding in Jellyfin, on an Ubuntu host run the following:
+
+Set up the libnvidia-container repository:
+
+```
+distribution=$(. /etc/os-release;echo $ID$VERSION_ID) \
+      && curl -fsSL https://nvidia.github.io/libnvidia-container/gpgkey | sudo gpg --dearmor -o /usr/share/keyrings/nvidia-container-toolkit-keyring.gpg \
+      && curl -s -L https://nvidia.github.io/libnvidia-container/$distribution/libnvidia-container.list | \
+            sed 's#deb https://#deb [signed-by=/usr/share/keyrings/nvidia-container-toolkit-keyring.gpg] https://#g' | \
+            sudo tee /etc/apt/sources.list.d/nvidia-container-toolkit.list
+```
+
+Install the Nvidia container toolkit and configure it:
 
 ```
 apt update
