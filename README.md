@@ -12,15 +12,16 @@ This Docker Compose stack includes images for the following web services:
 
 as well as the following images for support services:
   - [Autoheal](https://hub.docker.com/r/willfarrell/autoheal) - container monitoring
-  - [Collectd Graph Panel](https://hub.docker.com/r/pedbarbosa/docker-cgp) - collectd statistics viewer
+  - [Collectd Graph Panel](https://hub.docker.com/r/pedbarbosa/cgp) - collectd statistics viewer
   - [DDclient](https://hub.docker.com/r/linuxserver/ddclient) - dynamic DNS updates
+  - [KODI](https://hub.docker.com/r/matthuisman/kodi-headless:Nexus) - headless KODI server
   - [MariaDB](https://hub.docker.com/r/linuxserver/mariadb) - SQL server
   - [Nginx](https://hub.docker.com/_/nginx) - proxy for web services
   - [Postfix](https://hub.docker.com/r/pedbarbosa/postfix) - mail server
   - [Smokeping](https://hub.docker.com/r/linuxserver/smokeping) - network statistics
   - [Swag](https://hub.docker.com/r/linuxserver/swag) - SSL certificate handler
 
-To use the stack, make sure to create a .env file with the required variables:
+To use the stack, make sure to create a .env file, and populate it with the required variables:
 
 ```
 cp .env_example .env
