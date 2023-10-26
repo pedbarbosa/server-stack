@@ -1,4 +1,3 @@
-version: "3"
 services:
   vpn:
     image: ghcr.io/bubuntux/nordlynx
@@ -45,7 +44,7 @@ services:
     restart: always
 
   cgp:
-    image: pedbarbosa/docker-cgp
+    image: pedbarbosa/cgp
     container_name: cgp
     volumes:
       - /etc/localtime:/etc/localtime:ro
@@ -88,7 +87,7 @@ services:
       - PUID=1000
       - PGID=1000
       - "TZ=${TIMEZONE}"
-      - "JELLYFIN_PublishedServerUrl=${JELLYFIN_SERVER}"
+      - "JELLYFIN_PublishedServerUrl=jellyfin.${MY_DOMAIN}"
       - NVIDIA_VISIBLE_DEVICES=all
     volumes:
       - "${CONTAINERS_PATH}/jellyfin:/config"
@@ -101,6 +100,19 @@ services:
       - 7359:7359/udp
     healthcheck:
       test: "curl -ILXGET http://localhost:8096"
+    restart: always
+
+  kodi:
+    image: matthuisman/kodi-headless:Nexus
+    container_name: kodi
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - "TZ=${TIMEZONE}"
+    volumes:
+      - "${CONTAINERS_PATH}/kodi:/config/.kodi"
+    ports:
+      - 8088:8080
     restart: always
 
   mariadb:
@@ -123,7 +135,7 @@ services:
     restart: always
 
   postfix:
-    image: pedbarbosa/docker-postfix
+    image: pedbarbosa/postfix
     container_name: postfix
     ports:
       - "25:25"
@@ -208,12 +220,12 @@ services:
       - PUID=1000
       - PGID=1000
       - "TZ=${TIMEZONE}"
-      - "URL=${SWAG_DOMAIN}"
+      - "URL=${MY_DOMAIN}"
+      - "EMAIL=admin@${MY_DOMAIN}"
       - "SUBDOMAINS=${SWAG_SUBDOMAINS}"
       - VALIDATION=dns
       - DNSPLUGIN=cloudflare
       - PROPAGATION=20
-      - "EMAIL=${SWAG_EMAIL}"
     volumes:
       - "${CONTAINERS_PATH}/swag:/config"
     restart: always
@@ -246,4 +258,3 @@ services:
     healthcheck:
       test: "curl -ILXGET http://localhost"
     restart: always
-
