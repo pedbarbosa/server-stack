@@ -103,8 +103,10 @@ services:
     restart: always
 
   kodi:
-    image: matthuisman/kodi-headless:Nexus
+    image: matthuisman/kodi-headless:Omega
     container_name: kodi
+    depends_on:
+      - mariadb
     environment:
       - PUID=1000
       - PGID=1000
