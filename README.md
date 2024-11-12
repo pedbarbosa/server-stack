@@ -5,7 +5,8 @@ This Docker Compose stack includes images for the following web services:
   - [HomeAssistant](https://hub.docker.com/r/homeassistant/home-assistant) - home automation
   - [Jellyfin](https://hub.docker.com/r/linuxserver/jellyfin) - private media streaming
   - [ProjectSend](https://hub.docker.com/r/linuxserver/projectsend) - private file sharing
-  - [RuTorrent](https://hub.docker.com/r/crazymax/rtorrent-rutorrent) - torrent handling (backed by a [NordVPN](https://hub.docker.com/r/bubuntux/nordlynx) VPN client)
+  - [Radarr](https://hub.docker.com/r/linuxserver/radarr) - movie management 
+  - [RuTorrent](https://hub.docker.com/r/crazymax/rtorrent-rutorrent) - torrent handling (backed by a [gluetun](https://hub.docker.com/r/qmcgaw/gluetun) VPN client)
   - [Sickchill](https://hub.docker.com/r/linuxserver/sickchill) - TV shows management
   - [Syncthing](https://hub.docker.com/r/linuxserver/syncthing) - private backups
   - [Vaultwarden](https://hub.docker.com/r/vaultwarden/server) - password management
@@ -14,11 +15,14 @@ as well as the following images for support services:
   - [Autoheal](https://hub.docker.com/r/willfarrell/autoheal) - container monitoring
   - [Collectd Graph Panel](https://hub.docker.com/r/pedbarbosa/cgp) - collectd statistics viewer
   - [DDclient](https://hub.docker.com/r/linuxserver/ddclient) - dynamic DNS updates
-  - [KODI](https://hub.docker.com/r/matthuisman/kodi-headless:Nexus) - headless KODI server
+  - [KODI](https://hub.docker.com/r/matthuisman/kodi-headless) - headless KODI server
   - [MariaDB](https://hub.docker.com/r/linuxserver/mariadb) - SQL server
+  - [Mosquitto](https://hub.docker.com/_/eclipse-mosquitto) - MQTT server
   - [Nginx](https://hub.docker.com/_/nginx) - proxy for web services
   - [Postfix](https://hub.docker.com/r/pedbarbosa/postfix) - mail server
+  - [Prowlarr](https://hub.docker.com/r/linuxserver/prowlarr) - index manager for "arr" apps
   - [Smokeping](https://hub.docker.com/r/linuxserver/smokeping) - network statistics
+  - [Sungather](https://hub.docker.com/r/pedbarbosa/sungather) - SSL certificate handler
   - [Swag](https://hub.docker.com/r/linuxserver/swag) - SSL certificate handler
 
 To use the stack, make sure to create a .env file, and populate it with the required variables:
