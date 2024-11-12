@@ -1,11 +1,14 @@
 version: 2.1
 
 orbs:
-  docker: circleci/docker@2.8.1
+  docker: circleci/docker@2.2.0
 
 jobs:
   build:
+    docker:
+        - image: ypereirareis/docker-compose
     steps:
+        - docker/install-docker-compose
         - checkout
         - setup_remote_docker
         - run:
