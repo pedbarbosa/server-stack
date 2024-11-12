@@ -1,16 +1,23 @@
 #!/usr/bin/env bash
 
+declare -A DEPENDENT_CONTAINERS
+DEPENDENT_CONTAINERS=(
+    ["mariadb"]="homeassistant kodi"
+    ["gluetun"]="rutorrent"
+)
+
+check_priority() {
+    if [[ " ${!DEPENDENT_CONTAINERS[@]} " =~ " $CONTAINER " ]]; then
+        for RESTART_TARGET in ${DEPENDENT_CONTAINERS[$PRIORITY]}; do
+            echo -e "\n>>> Restarting container "$RESTART_TARGET" due to "$CONTAINER" restart ..."
+            docker restart $RESTART_TARGET
+        done
+    fi
+}
+
 restart_container() {
-    echo "Restarting container "$CONTAINER" after installing updates" && \
+    echo -e "\n>>> Restarting container "$CONTAINER" after installing updates ..."
     docker restart "$CONTAINER"
-    if [[ "$CONTAINER" == 'mariadb' ]]; then
-        echo "Restarting dependent containers ..." && \
-        docker restart homeassistant
-    fi
-    if [[ "$CONTAINER" == 'nordvpn' ]]; then
-        echo "Restarting dependent containers ..." && \
-        docker restart rutorrent
-    fi
 }
 
 patch_alpine() {
@@ -19,15 +26,18 @@ patch_alpine() {
     if [[ "$ITEMS" -gt 0 ]]; then
         docker exec -it "$CONTAINER" sh -c "apk upgrade && find /usr/lib -regex '^.*\(__pycache__\|\.py[co]\)$' -delete && rm -rf /var/cache/apk/*" && \
         restart_container
+        check_priority
     fi
 }
+
 
 patch_debian() {
     docker exec -it "$CONTAINER" sh -c 'apt update'
     ITEMS=$(docker exec -it "$CONTAINER" sh -c 'apt list --upgradable 2>/dev/null' | grep upgradable | wc -l)
     if [[ "$ITEMS" -gt 0 ]]; then
-        docker exec -it "$CONTAINER" sh -c 'apt upgrade -y && apt clean autoclean && apt autoremove -y' && \
+        docker exec -it "$CONTAINER" sh -c 'export DEBIAN_FRONTEND=noninteractive && apt upgrade -y && apt clean autoclean && apt autoremove -y' && \
         restart_container
+        check_priority
     fi
 }
 
@@ -45,20 +55,13 @@ find_release() {
             exit 1
         fi
     fi
-
     unset $OS_RELEASE
-}
-
-
-check_if_generic() {
-    GENERIC_CHECK=$(docker exec -it "$CONTAINER" sh -c 'uname -r')
-    RELEASE=$(echo "$OS_RELEASE" | awk -F= '$1=="ID" { print $2 ;}' | tr -d '[:cntrl:]')
 }
 
 get_release_and_patch_server() {
     find_release
     if [[ ! -z "$RELEASE" ]]; then
-        echo -e "\nContainer '$CONTAINER' is running OS release '$RELEASE'.\n"
+        echo -e "\n>>> Container '$CONTAINER' is running OS release '$RELEASE'.\n"
         if [[ "$RELEASE" == 'alpine' || "$RELEASE" == 'generic' ]]; then
             patch_alpine
         elif [[ "$RELEASE" == 'debian' || "$RELEASE" == 'ubuntu' ]]; then
@@ -72,8 +75,23 @@ get_release_and_patch_server() {
     unset $RELEASE
 }
 
+for PRIORITY in "${!DEPENDENT_CONTAINERS[@]}"; do
+    if docker ps --format "{{.Names}}" | grep -q "$PRIORITY"; then
+        for DEPENDENT in ${DEPENDENT_CONTAINERS[$PRIORITY]}; do
+            if docker ps --format "{{.Names}}" | grep -q "$DEPENDENT"; then
+                CONTAINER=$DEPENDENT
+                get_release_and_patch_server
+            fi
+        done
+        CONTAINER=$PRIORITY
+        get_release_and_patch_server
+    fi
+done
+
 for CONTAINER in $(docker ps --format "{{.Names}}"); do
-    get_release_and_patch_server
+    if ! [[ "${!DEPENDENT_CONTAINERS[@]}" =~ "$CONTAINER" ]] && ! [[ "${DEPENDENT_CONTAINERS[*]}" =~ "$CONTAINER" ]]; then
+        get_release_and_patch_server
+    fi
 done
 
 unset $CONTAINER
