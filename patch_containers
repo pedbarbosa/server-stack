@@ -2,8 +2,9 @@
 
 declare -A DEPENDENT_CONTAINERS
 DEPENDENT_CONTAINERS=(
-    ["mariadb"]="homeassistant kodi"
     ["gluetun"]="rutorrent"
+    ["mariadb"]="homeassistant kodi"
+    ["mosquitto"]="zigbee2mqtt"
 )
 
 check_priority() {
