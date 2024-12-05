@@ -3,7 +3,7 @@ version: 2.1
 jobs:
   build:
     docker:
-        - image: cimg/deploy
+        - image: cimg/deploy:2024.11
     steps:
         - checkout
         - run:
