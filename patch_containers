@@ -10,7 +10,7 @@ check_priority() {
     if [[ " ${!DEPENDENT_CONTAINERS[@]} " =~ " $CONTAINER " ]]; then
         for RESTART_TARGET in ${DEPENDENT_CONTAINERS[$PRIORITY]}; do
             echo -e "\n>>> Restarting container '$RESTART_TARGET' due to '$CONTAINER' restart ..."
-            docker restart $RESTART_TARGET
+            docker restart "$RESTART_TARGET"
         done
     fi
 }
