@@ -1,16 +1,11 @@
 version: 2.1
 
-orbs:
-  docker: circleci/docker@2.2.0
-
 jobs:
   build:
     docker:
-        - image: ypereirareis/docker-compose
+        - image: cimg/deploy:2024.11
     steps:
-        - docker/install-docker-compose
         - checkout
-        - setup_remote_docker
         - run:
             name: Set .env file
             command: cp .env_example .env
@@ -35,4 +30,3 @@ jobs:
         - run:
             name: Launch some containers
             command: docker-compose up -d vpn autoheal cgp ddclient mariadb postfix sickchill smokeping swag
-

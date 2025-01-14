@@ -1,22 +1,22 @@
 #!/usr/bin/env bash
 
-declare -A DEPENDENT_CONTAINERS
-DEPENDENT_CONTAINERS=(
-    ["mariadb"]="homeassistant kodi"
+declare -A DEPENDENT_CONTAINERS=(
     ["gluetun"]="rutorrent"
+    ["mariadb"]="homeassistant kodi"
+    ["mosquitto"]="zigbee2mqtt"
 )
 
 check_priority() {
     if [[ " ${!DEPENDENT_CONTAINERS[@]} " =~ " $CONTAINER " ]]; then
         for RESTART_TARGET in ${DEPENDENT_CONTAINERS[$PRIORITY]}; do
-            echo -e "\n>>> Restarting container "$RESTART_TARGET" due to "$CONTAINER" restart ..."
-            docker restart $RESTART_TARGET
+            echo -e "\n>>> Restarting container '$RESTART_TARGET' due to '$CONTAINER' restart ..."
+            docker restart "$RESTART_TARGET"
         done
     fi
 }
 
 restart_container() {
-    echo -e "\n>>> Restarting container "$CONTAINER" after installing updates ..."
+    echo -e "\n>>> Restarting container '$CONTAINER' after installing updates ..."
     docker restart "$CONTAINER"
 }
 
@@ -28,24 +28,35 @@ patch_alpine() {
         restart_container
         check_priority
     fi
+    unset $ITEMS
 }
 
 
 patch_debian() {
-    docker exec -it "$CONTAINER" sh -c 'apt update'
-    ITEMS=$(docker exec -it "$CONTAINER" sh -c 'apt list --upgradable 2>/dev/null' | grep upgradable | wc -l)
+    # use 'sudo' if user isn't 'root'
+    APT_CMD="apt"
+    CONTAINER_USER=$(docker exec -it "$CONTAINER" sh -c 'whoami' | tr -d '\r\n')
+    if [[ "$CONTAINER_USER" != "root" ]]; then
+        if [[ $(docker exec -it "$CONTAINER" sh -c 'which sudo') ]]; then
+            APT_CMD="sudo apt"
+        fi
+    fi
+
+    docker exec -it "$CONTAINER" sh -c "$APT_CMD update"
+    ITEMS=$(docker exec -it "$CONTAINER" sh -c "$APT_CMD list --upgradable 2>/dev/null" | grep upgradable | wc -l)
     if [[ "$ITEMS" -gt 0 ]]; then
-        docker exec -it "$CONTAINER" sh -c 'export DEBIAN_FRONTEND=noninteractive && apt upgrade -y && apt clean autoclean && apt autoremove -y' && \
+        docker exec -it "$CONTAINER" sh -c "export DEBIAN_FRONTEND=noninteractive && $APT_CMD upgrade -y && $APT_CMD clean autoclean && $APT_CMD autoremove -y" && \
         restart_container
         check_priority
     fi
+    unset $APT_CMD $CONTAINER_USER $ITEMS
 }
 
 find_release() {
     OS_RELEASE=$(docker exec -it "$CONTAINER" sh -c 'cat /etc/os-release')
     RELEASE=$(echo "$OS_RELEASE" | awk -F= '$1=="ID" { print $2 ;}' | tr -d '[:cntrl:]')
 
-    # If /etc/os-release wasn't present, check with uname
+    # if /etc/os-release wasn't present, check with uname
     if [[ -z "$RELEASE" ]]; then
         OS_RELEASE=$(docker exec -it "$CONTAINER" sh -c 'uname -r')
         if [[ "$OS_RELEASE" == *generic* ]]; then
@@ -94,4 +105,5 @@ for CONTAINER in $(docker ps --format "{{.Names}}"); do
     fi
 done
 
-unset $CONTAINER
+unset $CONTAINER $RELEASE
+

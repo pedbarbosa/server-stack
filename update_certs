@@ -1,4 +1,5 @@
 #!/usr/bin/env zsh
+set -x
 
 if [[ -z "$DOMAIN" ]]; then
     echo "Variable 'DOMAIN' isn't set, quiting ..."
@@ -34,5 +35,5 @@ if ! ROUTER_EXPIRY=$(openssl s_client -showcerts -servername router.${DOMAIN} -c
 fi
 if ! [[ $SWAG_EXPIRY == $ROUTER_EXPIRY ]]; then
     echo "LetsEncrypt certificate has been updated, or Router certificate date does not match: $ROUTER_EXPIRY"
-    scp "${SWAG_PATH}"/*.pem "$ROUTER_PATH" && ssh router '/etc/init.d/uhttpd restart' && echo "Certficate updated, router's uhttpd service restarted."
+    scp -O "${SWAG_PATH}"/*.pem "$ROUTER_PATH" && ssh router '/etc/init.d/uhttpd restart' && echo "Certficate updated, router's uhttpd service restarted."
 fi

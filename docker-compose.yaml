@@ -13,8 +13,8 @@ services:
       - 8388:8388/tcp # Shadowsocks
       - 8388:8388/udp # Shadowsocks
     environment:
-      - VPN_SERVICE_PROVIDER=${VPN_SERVICE_PROVIDER}"
       - VPN_TYPE=wireguard
+      - "VPN_SERVICE_PROVIDER=${VPN_SERVICE_PROVIDER}"
       - "WIREGUARD_PRIVATE_KEY=${WIREGUARD_PRIVATE_KEY}"
       - "TZ=${TIMEZONE}"
       - "SERVER_COUNTRIES=${COUNTRY}"
@@ -37,7 +37,6 @@ services:
       - "TZ=${TIMEZONE}"
       - XMLRPC_PORT=8008 # due to conflict with Gluetun's Control Panel port
     volumes:
-      - ./config/rutorrent_style.css:/var/www/rutorrent/css/style.css:ro
       - "${CONTAINERS_PATH}/rutorrent:/data"
       - "${TORRENTS_PATH}:/downloads"
     healthcheck:
@@ -219,7 +218,7 @@ services:
     restart: always
 
   radarr:
-    image: linuxserver/radarr:5.14.0
+    image: linuxserver/radarr
     container_name: radarr
     environment:
       - UMASK_SET=022
@@ -328,4 +327,20 @@ services:
       - 8084:80
     healthcheck:
       test: "curl -ILXGET http://localhost"
+    restart: always
+
+  zigbee2mqtt:
+    image: koenkk/zigbee2mqtt
+    container_name: zigbee2mqtt
+    environment:
+      - "TZ=${TIMEZONE}"
+    volumes:
+      - "${CONTAINERS_PATH}/zigbee2mqtt:/app/data"
+      - /run/udev:/run/udev:ro
+    ports:
+      - 8087:8080
+    devices:
+      - "${ZIGBEE_USB_DEVICE}:/dev/ttyUSB0"
+    depends_on:
+      - mosquitto
     restart: always
