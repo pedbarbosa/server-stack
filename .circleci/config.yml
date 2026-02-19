@@ -26,7 +26,7 @@ jobs:
             command: sed -i 's/^VIDEO_PATH=/VIDEO_PATH=.\/video/g' .env 
         - run:
             name: Pull all containers
-            command: docker-compose pull -q
+            command: docker-compose --profile all pull -q
         - run:
             name: Launch some containers
-            command: docker-compose up -d vpn autoheal cgp ddclient mariadb postfix sickchill smokeping swag
+            command: docker-compose --profile all up -d autoheal cgp ddclient mariadb postfix sickchill smokeping
