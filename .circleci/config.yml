@@ -3,9 +3,17 @@ version: 2.1
 jobs:
   build:
     docker:
-      - image: cimg/deploy:2026.02.1
+      - image: cimg/base:stable
     steps:
       - checkout
+      - setup_remote_docker:
+          version: 29.2.1
+      - run:
+          name: Install Docker Compose
+          command: |
+            sudo curl -L "https://github.com/docker/compose/releases/download/v2.23.3/docker-compose-linux-x86_64" -o /usr/local/bin/docker-compose
+            sudo chmod +x /usr/local/bin/docker-compose
+            docker-compose version
       - run:
           name: Set barebones .env file
           command: cp .env_example .env
@@ -14,7 +22,7 @@ jobs:
           command: |
             sed -i 's/^MY_DOMAIN=/MY_DOMAIN=example.com/g' .env
             sed -i 's/^CONTAINERS_PATH=/CONTAINERS_PATH=.\/containers/g' .env
-            sed -i 's/^TIMEZONE=/TIMEZONE=Etc\/UTC/g' .env
+            sed -i 's/^TIMEZONE=\"\$\{COUNTRY\}\/\$\{CITY\}\"/TIMEZONE=Etc\/UTC/g' .env
             sed -i 's/^CLOUDFLARE_API_TOKEN=/CLOUDFLARE_API_TOKEN=sample_token/g' .env
             sed -i 's/^CLOUDFLARE_TUNNEL_TOKEN=/CLOUDFLARE_TUNNEL_TOKEN=sample_token/g' .env
             sed -i 's/^VPN_SERVICE_PROVIDER=/VPN_SERVICE_PROVIDER=nordvpn/g' .env
