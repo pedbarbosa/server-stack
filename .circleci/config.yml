@@ -13,7 +13,7 @@ jobs:
             sudo curl -L "https://github.com/docker/compose/releases/download/v2.23.3/docker-compose-linux-x86_64" -o /usr/local/bin/docker-compose
             sudo chmod +x /usr/local/bin/docker-compose
             docker --version
-            docker compose version
+            docker-compose version
       - run:
           name: Set barebones .env file
           command: cp .env_example .env
@@ -42,13 +42,13 @@ jobs:
           command: cat .env
       - run:
           name: Pull all containers
-          command: docker compose --profile all pull -q
+          command: docker-compose --profile all pull -q
       - run:
           name: Launch some containers
-          command: docker compose --profile all up -d autoheal cgp ddclient mariadb librespeed postfix prowlarr radarr seerr sickchill sonarr smokeping
+          command: docker-compose --profile all up -d autoheal cgp ddclient mariadb librespeed postfix prowlarr radarr seerr sickchill sonarr smokeping
       - run:
           name: Tear it all down
           command: |
-            docker compose --profile all down -v
+            docker-compose --profile all down -v
             docker system prune -a -f
 
