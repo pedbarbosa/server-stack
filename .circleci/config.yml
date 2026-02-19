@@ -7,7 +7,7 @@ jobs:
     steps:
       - checkout
       - setup_remote_docker:
-          version: 28.1.1
+          version: 20.10.25
       - run:
           name: Install Docker Compose
           command: |
@@ -46,3 +46,8 @@ jobs:
       - run:
           name: Launch some containers
           command: docker-compose --profile all up -d autoheal cgp ddclient mariadb postfix sickchill smokeping
+      - run:
+          name: Tear it all down
+          command: |
+            docker-compose --profile all down -v
+            docker system prune -a -f
