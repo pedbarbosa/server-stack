@@ -1,39 +1,69 @@
 #!/usr/bin/env zsh
-set -x
 
-if [[ -z "$DOMAIN" ]]; then
-    echo "Variable 'DOMAIN' isn't set, quiting ..."
-    exit 1
-fi
+set -euo pipefail 2>/dev/null || { set -euo; setopt pipefail; }
+IFS=$'\n\t'
+
+VERBOSE=0
+
+usage() {
+    cat <<EOF
+Usage: $0 [-v] [-h]
+  -v    Verbose output
+  -h    Show this help and exit
+EOF
+}
+
+info() { printf '%s\n' "$1"; }
+debug() { if [[ ${VERBOSE:-0} -eq 1 ]]; then printf '%s\n' "$1"; fi }
+error() { printf '%s\n' "$1" >&2; exit 1; }
+
+while getopts "vh" opt; do
+    case "${opt}" in
+        v) VERBOSE=1 ;;
+        h) usage; exit 0 ;;
+        *) usage; exit 1 ;;
+    esac
+done
+shift $((OPTIND - 1))
+
+get_env_var() {
+    local key="$1" file="$2" val
+    val=$(grep -E "^${key}=" "$file" | tail -n1 | sed -E 's/^[^=]*=//; s/^\"?(.*)\"?$/\1/; s/[[:space:]]*$//' || true)
+    printf '%s' "${val:-}"
+}
 
 SCRIPT_PATH="$( cd -- "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )"
-CONTAINERS_PATH=$(grep 'CONTAINERS_PATH' "${SCRIPT_PATH}/.env" | cut -d '=' -f2)
-if [ -z "$CONTAINERS_PATH" ]; then
-    echo "Variable 'CONTAINERS_PATH' isn't set, quiting ..."
-    exit 1
+DOMAIN=$(get_env_var "MY_DOMAIN" "${SCRIPT_PATH}/.env")
+if [ -z "${DOMAIN}" ]; then
+    error "Variable 'MY_DOMAIN' isn't set in '${SCRIPT_PATH}/.env', quitting ..."
 fi
 
-PROXY_PATH=${CONTAINERS_PATH}/proxy/certs/
-SWAG_PATH=${CONTAINERS_PATH}/swag/etc/letsencrypt/live/${DOMAIN}
-ROUTER_PATH=router:/etc/config/certs/
+NETWORK_DEVICES=$(get_env_var "NETWORK_DEVICES" "${SCRIPT_PATH}/.env")
+if [ -z "${NETWORK_DEVICES}" ]; then
+    error "Variable 'NETWORK_DEVICES' isn't set in '${SCRIPT_PATH}/.env', quitting ..."
+fi
+DEVICES=("${(@s/,/)NETWORK_DEVICES}")
 
-# Check local certificates expiration dates
-if ! SWAG_EXPIRY=$(openssl x509 -enddate -noout -in "${SWAG_PATH}/cert.pem"); then
-    echo "LetsEncrypt certificate missing at ${SWAG_PATH}/cert.pem, quiting ..." && exit 1
+CONTAINERS_PATH=$(get_env_var "CONTAINERS_PATH" "${SCRIPT_PATH}/.env")
+if [ -z "${CONTAINERS_PATH}" ]; then
+    error "Variable 'CONTAINERS_PATH' isn't set in '${SCRIPT_PATH}/.env', quitting ..."
 fi
-if ! PROXY_EXPIRY=$(openssl x509 -enddate -noout -in "${PROXY_PATH}/cert.pem"); then
-    echo "Proxy certificate missing at ${PROXY_PATH}/cert.pem, quiting ..." && exit 1
-fi
-if ! [[ $SWAG_EXPIRY == $PROXY_EXPIRY ]]; then
-    echo "LetsEncrypt certificate has been updated, or Proxy certificate date does not match: $PROXY_EXPIRY"
-    cp "${SWAG_PATH}"/*.pem "$PROXY_PATH" && docker restart proxy && echo "Certficate updated, proxy restarted."
-fi
+CERT_PATH="${CONTAINERS_PATH}/caddy/data/certificates/acme-v02.api.letsencrypt.org-directory"
 
-# Check remote certificate expiration date
-if ! ROUTER_EXPIRY=$(openssl s_client -showcerts -servername router.${DOMAIN} -connect router.${DOMAIN}:443 2>/dev/null | openssl x509 -inform pem -noout -enddate); then
-    echo "Could not get certificate from 'https://router.${DOMAIN}', quiting ..." && exit 1
-fi
-if ! [[ $SWAG_EXPIRY == $ROUTER_EXPIRY ]]; then
-    echo "LetsEncrypt certificate has been updated, or Router certificate date does not match: $ROUTER_EXPIRY"
-    scp -O "${SWAG_PATH}"/*.pem "$ROUTER_PATH" && ssh router '/etc/init.d/uhttpd restart' && echo "Certficate updated, router's uhttpd service restarted."
-fi
+for i in "${DEVICES[@]}"; do
+    DEVICE_CERT_PATH="${CERT_PATH}/${i}.${DOMAIN}/$i.$DOMAIN"
+    LOCAL_CERT=$(sudo md5sum $DEVICE_CERT_PATH.crt | cut -d ' ' -f1)
+    REMOTE_CERT=$(ssh $i "md5sum /etc/uhttpd.crt | cut -d ' ' -f1")
+    if [[ $VERBOSE -eq 1 ]]; then
+        echo "Checking certificate for $i.$DOMAIN: $LOCAL_CERT"
+        echo "Remote certificate for $i.$DOMAIN: $REMOTE_CERT"
+    fi
+    if [ "$LOCAL_CERT" != "$REMOTE_CERT" ]; then
+        sudo scp -O $DEVICE_CERT_PATH.crt $i:/etc/uhttpd.crt && sudo scp -O $DEVICE_CERT_PATH.key $i:/etc/uhttpd.key \
+          && ssh $i '/etc/init.d/uhttpd restart' && echo "$i.$DOMAIN: Certificate updated and uhttpd service restarted."
+    else
+        if [[ $VERBOSE -eq 1 ]]; then
+            echo "Certificate for $i is up to date, no action needed."
+        fi
+    fi    
+done
