@@ -45,8 +45,7 @@ jobs:
           command: docker-compose --profile all pull -q
       - run:
           name: Launch some containers
-          command: docker-compose --profile all up -d autoheal caddy cgp ddclient mariadb \
-            librespeed postfix prowlarr radarr seerr sickchill sonarr smokeping
+          command: docker-compose --profile all up -d autoheal caddy cgp ddclient mariadb librespeed postfix prowlarr radarr seerr sickchill sonarr smokeping
       - run:
           name: Tear it all down
           command: |
