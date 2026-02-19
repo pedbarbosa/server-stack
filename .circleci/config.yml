@@ -7,7 +7,7 @@ jobs:
     steps:
       - checkout
       - setup_remote_docker:
-          version: 29.2.1
+          version: 28.1.1
       - run:
           name: Install Docker Compose
           command: |
