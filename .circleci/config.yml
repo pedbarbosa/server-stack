@@ -51,3 +51,4 @@ jobs:
           command: |
             docker-compose --profile all down -v
             docker system prune -a -f
+
