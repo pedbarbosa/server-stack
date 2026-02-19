@@ -1,0 +1,57 @@
+# Monitoring and health services
+services:
+  autoheal:
+    image: willfarrell/autoheal
+    container_name: autoheal
+    profiles: ["monitoring", "health", "all"]
+    environment:
+      AUTOHEAL_CONTAINER_LABEL: all
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - /var/run/docker.sock:/var/run/docker.sock
+    restart: always
+
+  cgp:
+    image: pedbarbosa/cgp
+    container_name: cgp
+    profiles: ["monitoring", "graphs", "all"]
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - /var/lib/collectd/rrd:/var/lib/collectd/rrd:ro
+    ports:
+      - 8085:80
+    healthcheck:
+      test: ["CMD", "curl", "-ILXGET", "http://localhost"]
+    restart: always
+
+  librespeed:
+    image: lscr.io/linuxserver/librespeed
+    container_name: librespeed
+    profiles: ["monitoring", "network", "all"]
+    environment:
+      PUID: ${PUID}
+      PGID: ${PGID}
+      TZ: ${TIMEZONE}
+    volumes:
+      - ${CONTAINERS_PATH}/librespeed:/config
+    ports:
+      - 8089:80
+    restart: always
+
+  smokeping:
+    image: linuxserver/smokeping
+    container_name: smokeping
+    profiles: ["monitoring", "network", "all"]
+    environment:
+      PUID: ${PUID}
+      PGID: ${PGID}
+      TZ: ${TIMEZONE}
+      MASTER_URL: https://smokeping.${MY_DOMAIN}/smokeping/
+    volumes:
+      - ${CONTAINERS_PATH}/smokeping/config:/config
+      - ${CONTAINERS_PATH}/smokeping/data:/data
+    ports:
+      - 8098:80
+    healthcheck:
+      test: ["CMD", "wget", "http://localhost:80", "--spider", "-q"]
+    restart: always

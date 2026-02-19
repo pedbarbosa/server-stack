@@ -1,0 +1,69 @@
+# Home automation and IoT services
+services:
+  homeassistant:
+    image: homeassistant/home-assistant:latest
+    container_name: homeassistant
+    profiles: ["home-automation", "core", "all"]
+    network_mode: host
+    depends_on:
+      mariadb:
+        condition: service_healthy
+        restart: true
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - ${CONTAINERS_PATH}/homeassistant:/config
+    healthcheck:
+      test: ["CMD", "curl", "-ILXGET", "http://localhost:8123"]
+    restart: always
+
+  mosquitto:
+    image: eclipse-mosquitto:2
+    container_name: mosquitto
+    profiles: ["home-automation", "mqtt", "all"]
+    environment:
+      MQTT_TEST_USER_NAME: ${MQTT_TEST_USER_NAME}
+      MQTT_TEST_USER_PASSWORD: ${MQTT_TEST_USER_PASSWORD}
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - ${CONTAINERS_PATH}/mosquitto/config:/mosquitto/config
+      - ${CONTAINERS_PATH}/mosquitto/data:/mosquitto/data
+      - ${CONTAINERS_PATH}/mosquitto/log:/mosquitto/log
+    ports:
+      - "1883:1883"
+    healthcheck:
+      test: ["CMD", "mosquitto_pub", "-u", "${MQTT_TEST_USER_NAME}", "-P", "${MQTT_TEST_USER_PASSWORD}", "-t", "test_topic", "-m", "test-message"]
+      start_period: 5s
+      timeout: 5s
+    restart: always
+
+  sungather:
+    image: pedbarbosa/sungather
+    container_name: sungather
+    profiles: ["home-automation", "solar", "all"]
+    environment:
+      TZ: ${TIMEZONE}
+    volumes:
+      - ${CONTAINERS_PATH}/sungather/config.yaml:/config/config.yaml
+      - ${CONTAINERS_PATH}/sungather/logs:/logs
+    ports:
+      - 8086:8080
+    restart: always
+
+  zigbee2mqtt:
+    image: koenkk/zigbee2mqtt
+    container_name: zigbee2mqtt
+    profiles: ["home-automation", "zigbee", "all"]
+    environment:
+      TZ: ${TIMEZONE}
+    volumes:
+      - ${CONTAINERS_PATH}/zigbee2mqtt:/app/data
+      - /run/udev:/run/udev:ro
+    ports:
+      - 8087:8080
+    devices:
+      - ${ZIGBEE_USB_DEVICE}:/dev/ttyUSB0
+    depends_on:
+      mosquitto:
+        condition: service_healthy
+        restart: true
+    restart: always
