@@ -22,7 +22,7 @@ jobs:
           command: |
             sed -i 's/^MY_DOMAIN=/MY_DOMAIN=example.com/g' .env
             sed -i 's/^CONTAINERS_PATH=/CONTAINERS_PATH=.\/containers/g' .env
-            sed -i 's/^TIMEZONE=\"\$\{COUNTRY\}\/\$\{CITY\}\"/TIMEZONE=Etc\/UTC/g' .env
+            sed -i 's|^TIMEZONE=.*|TIMEZONE=Etc/UTC|' .env
             sed -i 's/^CLOUDFLARE_API_TOKEN=/CLOUDFLARE_API_TOKEN=sample_token/g' .env
             sed -i 's/^CLOUDFLARE_TUNNEL_TOKEN=/CLOUDFLARE_TUNNEL_TOKEN=sample_token/g' .env
             sed -i 's/^VPN_SERVICE_PROVIDER=/VPN_SERVICE_PROVIDER=nordvpn/g' .env
