@@ -6,13 +6,13 @@ jobs:
       - image: cimg/base:stable
     steps:
       - checkout
-      - setup_remote_docker:
-          version: 20.10.25
+      - setup_remote_docker
       - run:
           name: Install Docker Compose
           command: |
             sudo curl -L "https://github.com/docker/compose/releases/download/v2.23.3/docker-compose-linux-x86_64" -o /usr/local/bin/docker-compose
             sudo chmod +x /usr/local/bin/docker-compose
+            docker --version
             docker-compose version
       - run:
           name: Set barebones .env file
