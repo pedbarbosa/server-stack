@@ -5,5 +5,5 @@
 .env
 
 # Protected configuration
+config/Caddyfile
 config/ddclient.conf
-

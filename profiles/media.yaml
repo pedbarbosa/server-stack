@@ -1,0 +1,166 @@
+# Media management and streaming services
+services:
+  rutorrent:
+    image: crazymax/rtorrent-rutorrent:latest
+    network_mode: service:gluetun
+    container_name: rutorrent
+    profiles: ["media", "torrents", "all"]
+    depends_on:
+      gluetun:
+        condition: service_healthy
+        restart: true
+    environment:
+      PUID: ${PUID}
+      PGID: ${PGID}
+      TZ: ${TIMEZONE}
+      XMLRPC_PORT: 8008 # due to conflict with Gluetun's Control Panel port
+    volumes:
+      - ${CONTAINERS_PATH}/rutorrent:/data
+      - ${TORRENTS_PATH}:/downloads
+    healthcheck:
+      test: ["CMD", "curl", "-ILXGET", "https://www.google.com"]
+    restart: always
+
+  jellyfin:
+    image: linuxserver/jellyfin
+    container_name: jellyfin
+    network_mode: host
+    profiles: ["media", "streaming", "all"]
+    runtime: nvidia
+    environment:
+      PUID: ${PUID}
+      PGID: ${PGID}
+      TZ: ${TIMEZONE}
+      NVIDIA_VISIBLE_DEVICES: all
+    volumes:
+      - ${CONTAINERS_PATH}/jellyfin:/config
+      - ${VIDEO_PATH}/Movies:/data/movies
+      - ${MUSIC_PATH}:/data/music
+      - ${VIDEO_PATH}/TV:/data/tvshows
+    healthcheck:
+      test: ["CMD", "curl", "-ILXGET", "http://localhost:8096"]
+    restart: always
+
+  kodi:
+    image: matthuisman/kodi-headless:Omega
+    container_name: kodi
+    profiles: ["media", "streaming", "all"]
+    depends_on:
+      mariadb:
+        condition: service_healthy
+        restart: true
+    environment:
+      PUID: 1001
+      PGID: 1002
+      TZ: ${TIMEZONE}
+    volumes:
+      - ${CONTAINERS_PATH}/kodi:/config/.kodi
+      - ${VIDEO_PATH}:/media
+      - ${THUMBNAILS_PATH}:/thumbnails
+    ports:
+      - "8088:8080"
+    restart: always
+    
+  lidarr:
+    image: blampe/lidarr
+    container_name: lidarr
+    profiles: ["media", "arr", "all"]
+    environment:
+      PUID: ${PUID}
+      PGID: ${PGID}
+      TZ: ${TIMEZONE}
+    volumes:
+      - ${CONTAINERS_PATH}/lidarr:/config
+      - ${MUSIC_PATH}:/music
+      - ${TORRENTS_PATH}:/downloads
+    ports:
+      - "8686:8686"
+    restart: unless-stopped
+
+  prowlarr:
+    image: linuxserver/prowlarr
+    container_name: prowlarr
+    profiles: ["media", "arr", "all"]
+    environment:
+      PUID: ${PUID}
+      PGID: ${PGID}
+      TZ: ${TIMEZONE}
+    volumes:
+      - ${CONTAINERS_PATH}/prowlarr:/config
+    ports:
+      - "9696:9696/tcp"
+    restart: always
+
+  radarr:
+    image: linuxserver/radarr
+    container_name: radarr
+    profiles: ["media", "arr", "all"]
+    environment:
+      UMASK_SET: 022
+      PUID: ${PUID}
+      PGID: ${PGID}
+      TZ: ${TIMEZONE}
+    volumes:
+      - ${VIDEO_PATH}/Movies:/movies
+      - ${TORRENTS_PATH}:/downloads
+      - ${CONTAINERS_PATH}/radarr:/config
+    ports:
+      - "7878:7878/tcp"
+    restart: always
+
+  seerr:
+    image: ghcr.io/seerr-team/seerr:latest
+    init: true
+    container_name: seerr
+    environment:
+      LOG_LEVEL: "debug"
+      PUID: ${PUID}
+      PGID: ${PGID}
+      TZ: ${TIMEZONE}
+    ports:
+      - "5055:5055"
+    volumes:
+      - ${CONTAINERS_PATH}/seerr:/app/config
+    healthcheck:
+      test: wget --no-verbose --tries=1 --spider http://localhost:5055/api/v1/status || exit 1
+      start_period: 20s
+      timeout: 3s
+      interval: 15s
+      retries: 3
+    restart: unless-stopped
+
+  sickchill:
+    image: linuxserver/sickchill:2024.3.1
+    container_name: sickchill
+    profiles: ["media", "tv", "all"]
+    environment:
+      PUID: ${PUID}
+      PGID: ${PGID}
+      TZ: ${TIMEZONE}
+    volumes:
+      - ${CONTAINERS_PATH}/sickchill:/config
+      - ${TORRENTS_PATH}:/torrents
+      - ${VIDEO_PATH}:/video
+    ports:
+      - "8081:8081"
+    healthcheck:
+      test: ["CMD", "wget", "http://0.0.0.0:8081", "--spider", "-q"]
+      timeout: 5s
+      retries: 10
+    restart: always
+
+  sonarr:
+    image: linuxserver/sonarr
+    container_name: sonarr
+    profiles: ["media", "arr", "all"]
+    environment:
+      PUID: ${PUID}
+      PGID: ${PGID}
+      TZ: ${TIMEZONE}
+    volumes:
+      - ${CONTAINERS_PATH}/sonarr:/config
+      - ${VIDEO_PATH}/TV:/tv
+      - ${TORRENTS_PATH}:/downloads
+    ports:
+      - "8989:8989"
+    restart: always

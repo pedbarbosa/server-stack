@@ -3,30 +3,52 @@ version: 2.1
 jobs:
   build:
     docker:
-        - image: cimg/deploy:2024.11
+      - image: cimg/base:stable
     steps:
-        - checkout
-        - run:
-            name: Set .env file
-            command: cp .env_example .env
-        - run:
-            name: Set timezone variable in .env file
-            command: sed -i 's/^TIMEZONE=/TIMEZONE=Etc\/UTC/g' .env
-        - run:
-            name: Set containers path variable in .env file
-            command: sed -i 's/^CONTAINERS_PATH=/CONTAINERS_PATH=.\/containers/g' .env 
-        - run:
-            name: Set Syncthing path variable in .env file
-            command: sed -i 's/^SYNCTHING_PATH=/SYNCTHING_PATH=.\/syncthing/g' .env
-        - run:
-            name: Set torrents path variable in .env file
-            command: sed -i 's/^TORRENTS_PATH=/TORRENTS_PATH=.\/torrents/g' .env
-        - run:
-            name: Set video path variable in .env file
-            command: sed -i 's/^VIDEO_PATH=/VIDEO_PATH=.\/video/g' .env 
-        - run:
-            name: Pull all containers
-            command: docker-compose pull -q
-        - run:
-            name: Launch some containers
-            command: docker-compose up -d vpn autoheal cgp ddclient mariadb postfix sickchill smokeping swag
+      - checkout
+      - setup_remote_docker
+      - run:
+          name: Install Docker Compose
+          command: |
+            sudo curl -L "https://github.com/docker/compose/releases/download/v2.23.3/docker-compose-linux-x86_64" -o /usr/local/bin/docker-compose
+            sudo chmod +x /usr/local/bin/docker-compose
+            docker --version
+            docker-compose version
+      - run:
+          name: Set barebones .env file
+          command: cp .env_example .env
+      - run:
+          name: Set variables in .env file
+          command: |
+            sed -i 's/^MY_DOMAIN=/MY_DOMAIN=example.com/g' .env
+            sed -i 's/^CONTAINERS_PATH=/CONTAINERS_PATH=.\/containers/g' .env
+            sed -i 's|^TIMEZONE=.*|TIMEZONE=Etc/UTC|' .env
+            sed -i 's/^CLOUDFLARE_API_TOKEN=/CLOUDFLARE_API_TOKEN=sample_token/g' .env
+            sed -i 's/^CLOUDFLARE_TUNNEL_TOKEN=/CLOUDFLARE_TUNNEL_TOKEN=sample_token/g' .env
+            sed -i 's/^VPN_SERVICE_PROVIDER=/VPN_SERVICE_PROVIDER=nordvpn/g' .env
+            sed -i 's/^WIREGUARD_PRIVATE_KEY=/WIREGUARD_PRIVATE_KEY=sample_key/g' .env
+            sed -i 's/^VIDEO_PATH=/VIDEO_PATH=.\/video/g' .env
+            sed -i 's/^THUMBNAILS_PATH=/THUMBNAILS_PATH=.\/thumbnails/g' .env
+            sed -i 's/^MUSIC_PATH=/MUSIC_PATH=.\/music/g' .env
+            sed -i 's/^MYSQL_ROOT_PASSWORD=/MYSQL_ROOT_PASSWORD=sample_password/g' .env
+            sed -i 's/^MQTT_TEST_USER_NAME=/MQTT_TEST_USER_NAME=sample_user/g' .env
+            sed -i 's/^MQTT_TEST_USER_PASSWORD=/MQTT_TEST_USER_PASSWORD=sample_password/g' .env
+            sed -i 's/^TORRENTS_PATH=/TORRENTS_PATH=.\/torrents/g' .env
+            sed -i 's/^SYNCTHING_PATH=/SYNCTHING_PATH=.\/syncthing/g' .env
+            sed -i 's/^VAULT_TOKEN=/VAULT_TOKEN=sample_token/g' .env
+            sed -i 's/^ZIGBEE_USB_DEVICE=/ZIGBEE_USB_DEVICE=\/dev\/ttyUSB0/g' .env
+      - run:
+          name: Display contents of .env file
+          command: cat .env
+      - run:
+          name: Pull all containers
+          command: docker-compose --profile all pull -q
+      - run:
+          name: Launch some containers
+          command: docker-compose --profile all up -d autoheal cgp ddclient mariadb librespeed postfix prowlarr radarr seerr sickchill sonarr smokeping
+      - run:
+          name: Tear it all down
+          command: |
+            docker-compose --profile all down -v
+            docker system prune -a -f
+

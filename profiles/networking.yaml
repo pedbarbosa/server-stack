@@ -1,0 +1,88 @@
+# Networking and VPN services
+services:
+  gluetun:
+    image: qmcgaw/gluetun
+    network_mode: bridge
+    container_name: gluetun
+    profiles: ["networking", "vpn", "all"]
+    cap_add:
+      - NET_ADMIN
+    devices:
+      - /dev/net/tun:/dev/net/tun
+    ports:
+      - "8082:8080" # RuTorrent
+      - "8888:8888/tcp" # HTTP proxy
+      - "8388:8388/tcp" # Shadowsocks
+    environment:
+      VPN_TYPE: wireguard
+      VPN_SERVICE_PROVIDER: ${VPN_SERVICE_PROVIDER}
+      WIREGUARD_PRIVATE_KEY: ${WIREGUARD_PRIVATE_KEY}
+      TZ: ${TIMEZONE}
+      SERVER_COUNTRIES: ${COUNTRY}
+      SERVER_CITIES: ${CITY}
+    volumes:
+      - ${CONTAINERS_PATH}/gluetun:/gluetun
+    healthcheck:
+      test: ["CMD", "wget", "https://www.google.com", "--spider", "-q"]
+      start_period: 10s
+      timeout: 5s
+    restart: always
+
+  caddy:
+    image: pedbarbosa/caddy
+    container_name: caddy
+    profiles: ["networking", "proxy", "ssl", "all"]
+    ports:
+      - "80:80"
+      - "443:443/tcp"
+      - "443:443/udp"
+    environment:
+      CLOUDFLARE_API_TOKEN: ${CLOUDFLARE_API_TOKEN}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    networks:
+      - caddy
+    volumes:
+      - ../config/Caddyfile:/etc/caddy/Caddyfile:ro
+      - ${CONTAINERS_PATH}/caddy/data:/data/caddy
+      - ${CONTAINERS_PATH}/caddy/config:/config/caddy
+    restart: always
+
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    container_name: cloudflared
+    profiles: ["networking", "tunnel", "all"]
+    command: tunnel --no-autoupdate run
+    environment:
+      TUNNEL_TOKEN: ${CLOUDFLARE_TUNNEL_TOKEN}
+    restart: always
+
+  ddclient:
+    image: linuxserver/ddclient
+    container_name: ddclient
+    profiles: ["networking", "dns", "all"]
+    environment:
+      PUID: ${PUID}
+      PGID: ${PGID}
+      TZ: ${TIMEZONE}
+    volumes:
+      - ../config/ddclient.conf:/config/ddclient.conf
+    restart: always
+
+  postfix:
+    image: pedbarbosa/postfix
+    container_name: postfix
+    profiles: ["networking", "mail", "all"]
+    ports:
+      - "25:25"
+      - "587:587"
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - /var/log/maillog:/var/log/maillog
+      - ${CONTAINERS_PATH}/postfix:/config
+    restart: always
+
+networks:
+ caddy:
+   name: caddy
+   driver: bridge
