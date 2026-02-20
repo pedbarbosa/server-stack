@@ -60,7 +60,7 @@ services:
     ports:
       - "8088:8080"
     restart: always
-    
+
   lidarr:
     image: blampe/lidarr
     container_name: lidarr
@@ -106,6 +106,17 @@ services:
       - ${CONTAINERS_PATH}/radarr:/config
     ports:
       - "7878:7878/tcp"
+    healthcheck:
+      test: >
+        /bin/sh -c '
+        if [ -z "$RADARR_API_KEY" ]; then 
+          exit 0; 
+        fi; 
+        curl -f "http://localhost:7878/api/v3/health?apikey=$RADARR_API_KEY" || exit 1'
+      interval: 5m00s
+      timeout: 10s
+      retries: 2
+      start_period: 30s
     restart: always
 
   seerr:
@@ -163,4 +174,15 @@ services:
       - ${TORRENTS_PATH}:/downloads
     ports:
       - "8989:8989"
+    healthcheck:
+      test: >
+        /bin/sh -c '
+        if [ -z "$SONARR_API_KEY" ]; then 
+          exit 0; 
+        fi; 
+        curl -f "http://localhost:8989/api/v3/health?apikey=${SONARR_API_KEY}" || exit 1'
+      interval: 5m00s
+      timeout: 10s
+      retries: 2
+      start_period: 30s
     restart: always

@@ -36,6 +36,7 @@ services:
       - "80:80"
       - "443:443/tcp"
       - "443:443/udp"
+      - "2019:2019"
     environment:
       CLOUDFLARE_API_TOKEN: ${CLOUDFLARE_API_TOKEN}
     extra_hosts:
@@ -46,6 +47,12 @@ services:
       - ../config/Caddyfile:/etc/caddy/Caddyfile:ro
       - ${CONTAINERS_PATH}/caddy/data:/data/caddy
       - ${CONTAINERS_PATH}/caddy/config:/config/caddy
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:2019/metrics", "||", "exit", "1"]
+      interval: 1m30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
     restart: always
 
   cloudflared:
