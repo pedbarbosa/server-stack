@@ -100,6 +100,7 @@ services:
       PUID: ${PUID}
       PGID: ${PGID}
       TZ: ${TIMEZONE}
+      RADARR_API_KEY: ${RADARR_API_KEY}
     volumes:
       - ${VIDEO_PATH}/Movies:/movies
       - ${TORRENTS_PATH}:/downloads
@@ -107,12 +108,7 @@ services:
     ports:
       - "7878:7878/tcp"
     healthcheck:
-      test: >
-        /bin/sh -c '
-        if [ -z "$RADARR_API_KEY" ]; then 
-          exit 0; 
-        fi; 
-        curl -f "http://localhost:7878/api/v3/health?apikey=$RADARR_API_KEY" || exit 1'
+      test: ["CMD-SHELL", "curl -f \"http://localhost:7878/api/v3/health?apikey=$RADARR_API_KEY\" || exit 1"]
       interval: 5m00s
       timeout: 10s
       retries: 2
@@ -123,6 +119,7 @@ services:
     image: ghcr.io/seerr-team/seerr:latest
     init: true
     container_name: seerr
+    profiles: ["media", "requests", "all"]
     environment:
       LOG_LEVEL: "debug"
       PUID: ${PUID}
@@ -140,26 +137,6 @@ services:
       retries: 3
     restart: unless-stopped
 
-  sickchill:
-    image: linuxserver/sickchill:2024.3.1
-    container_name: sickchill
-    profiles: ["media", "tv", "all"]
-    environment:
-      PUID: ${PUID}
-      PGID: ${PGID}
-      TZ: ${TIMEZONE}
-    volumes:
-      - ${CONTAINERS_PATH}/sickchill:/config
-      - ${TORRENTS_PATH}:/torrents
-      - ${VIDEO_PATH}:/video
-    ports:
-      - "8081:8081"
-    healthcheck:
-      test: ["CMD", "wget", "http://0.0.0.0:8081", "--spider", "-q"]
-      timeout: 5s
-      retries: 10
-    restart: always
-
   sonarr:
     image: linuxserver/sonarr
     container_name: sonarr
@@ -168,6 +145,7 @@ services:
       PUID: ${PUID}
       PGID: ${PGID}
       TZ: ${TIMEZONE}
+      SONARR_API_KEY: ${SONARR_API_KEY}
     volumes:
       - ${CONTAINERS_PATH}/sonarr:/config
       - ${VIDEO_PATH}/TV:/tv
@@ -175,12 +153,7 @@ services:
     ports:
       - "8989:8989"
     healthcheck:
-      test: >
-        /bin/sh -c '
-        if [ -z "$SONARR_API_KEY" ]; then 
-          exit 0; 
-        fi; 
-        curl -f "http://localhost:8989/api/v3/health?apikey=${SONARR_API_KEY}" || exit 1'
+      test: ["CMD-SHELL", "curl -f \"http://localhost:8989/api/v3/health?apikey=${SONARR_API_KEY}\" || exit 1"]
       interval: 5m00s
       timeout: 10s
       retries: 2
