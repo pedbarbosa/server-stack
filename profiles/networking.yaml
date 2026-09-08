@@ -37,6 +37,7 @@ services:
       - "2019:2019"
     environment:
       CLOUDFLARE_API_TOKEN: ${CLOUDFLARE_API_TOKEN}
+      TZ: ${TIMEZONE}
     extra_hosts:
       - "host.docker.internal:host-gateway"
     networks:
