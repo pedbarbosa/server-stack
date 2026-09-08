@@ -45,7 +45,8 @@ jobs:
           command: docker-compose --profile all pull -q
       - run:
           name: Launch some containers
-          command: docker-compose --profile all up -d autoheal cgp ddclient mariadb librespeed postfix prowlarr radarr seerr sonarr smokeping
+          # postfix is excluded: it publishes host port 25, which some CI runners already have bound locally
+          command: docker-compose --profile all up -d autoheal cgp ddclient mariadb librespeed prowlarr radarr seerr sonarr smokeping
       - run:
           name: Tear it all down
           command: |
