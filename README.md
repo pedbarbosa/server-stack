@@ -1,37 +1,39 @@
 # server-stack
+
 [![Build Status](https://circleci.com/gh/pedbarbosa/server-stack.svg?style=shield)](https://app.circleci.com/pipelines/github/pedbarbosa/server-stack)
 
 ## Service list
 
 This Docker Compose stack uses the following web services:
-  - [HomeAssistant](https://hub.docker.com/r/homeassistant/home-assistant) - home automation
-  - [Immich](https://ghcr.io/immich-app/immich-server) - photo archive
-  - [Jellyfin](https://hub.docker.com/r/linuxserver/jellyfin) - private media streaming
-  - [Lidarr](https://hub.docker.com/r/blampe/lidarr) - music management
-  - [ProjectSend](https://hub.docker.com/r/linuxserver/projectsend) - private file sharing
-  - [Radarr](https://hub.docker.com/r/linuxserver/radarr) - movie management 
-  - [RuTorrent](https://hub.docker.com/r/crazymax/rtorrent-rutorrent) - torrent handling (backed by a [gluetun](https://hub.docker.com/r/qmcgaw/gluetun) VPN client)
-  - [Seer](https://ghcr.io/seerr-team/seerr) - Movie and TV show request handling
-  - [Sickchill](https://hub.docker.com/r/linuxserver/sickchill) - TV shows management
-  - [Sonarr](https://hub.docker.com/r/linuxserver/radarr) - TV shows management 
-  - [Syncthing](https://hub.docker.com/r/linuxserver/syncthing) - private backups
-  - [Vaultwarden](https://hub.docker.com/r/vaultwarden/server) - password management
+
+- [HomeAssistant](https://hub.docker.com/r/homeassistant/home-assistant) - home automation
+- [Immich](https://ghcr.io/immich-app/immich-server) - photo archive
+- [Jellyfin](https://hub.docker.com/r/linuxserver/jellyfin) - private media streaming
+- [Lidarr](https://hub.docker.com/r/blampe/lidarr) - music management
+- [ProjectSend](https://hub.docker.com/r/linuxserver/projectsend) - private file sharing
+- [Radarr](https://hub.docker.com/r/linuxserver/radarr) - movie management
+- [RuTorrent](https://hub.docker.com/r/crazymax/rtorrent-rutorrent) - torrent handling (backed by a [gluetun](https://hub.docker.com/r/qmcgaw/gluetun) VPN client)
+- [Seerr](https://ghcr.io/seerr-team/seerr) - Movie and TV show request handling
+- [Sonarr](https://hub.docker.com/r/linuxserver/sonarr) - TV shows management
+- [Syncthing](https://hub.docker.com/r/linuxserver/syncthing) - private backups
+- [Vaultwarden](https://hub.docker.com/r/vaultwarden/server) - password management
 
 as well as the following support services:
-  - [Autoheal](https://hub.docker.com/r/willfarrell/autoheal) - container monitoring
-  - [Caddy](https://hub.docker.com/r/pedbarbosa/caddy) - web proxy and SSL certificate handler
-  - [Cloudflared](https://hub.docker.com/r/cloudflare/cloudflared) - secure tunnel to Cloudflare
-  - [Collectd Graph Panel](https://hub.docker.com/r/pedbarbosa/cgp) - collectd statistics viewer
-  - [DDclient](https://hub.docker.com/r/linuxserver/ddclient) - dynamic DNS updates
-  - [KODI](https://hub.docker.com/r/matthuisman/kodi-headless) - headless KODI server
-  - [LibreSpeed](https://lscr.io/linuxserver/librespeed) - private speed testing
-  - [MariaDB](https://hub.docker.com/r/linuxserver/mariadb) - SQL server
-  - [Mosquitto](https://hub.docker.com/_/eclipse-mosquitto) - MQTT server
-  - [Postfix](https://hub.docker.com/r/pedbarbosa/postfix) - mail server
-  - [Prowlarr](https://hub.docker.com/r/linuxserver/prowlarr) - index manager for "arr" apps
-  - [Smokeping](https://hub.docker.com/r/linuxserver/smokeping) - internet latency statistics
-  - [Sungather](https://hub.docker.com/r/pedbarbosa/sungather) - solar panel inverter metrics
-  - [Zigbee2MQTT](https://hub.docker.com/r/koenkk/zigbee2mqtt) - Zigbee to MQTT bridge
+
+- [Autoheal](https://hub.docker.com/r/willfarrell/autoheal) - container monitoring
+- [Caddy](https://hub.docker.com/r/pedbarbosa/caddy) - web proxy and SSL certificate handler
+- [Cloudflared](https://hub.docker.com/r/cloudflare/cloudflared) - secure tunnel to Cloudflare
+- [Collectd Graph Panel](https://hub.docker.com/r/pedbarbosa/cgp) - collectd statistics viewer
+- [DDclient](https://hub.docker.com/r/linuxserver/ddclient) - dynamic DNS updates
+- [KODI](https://hub.docker.com/r/matthuisman/kodi-headless) - headless KODI server
+- [LibreSpeed](https://lscr.io/linuxserver/librespeed) - private speed testing
+- [MariaDB](https://hub.docker.com/r/linuxserver/mariadb) - SQL server
+- [Mosquitto](https://hub.docker.com/_/eclipse-mosquitto) - MQTT server
+- [Postfix](https://hub.docker.com/r/pedbarbosa/postfix) - mail server
+- [Prowlarr](https://hub.docker.com/r/linuxserver/prowlarr) - index manager for "arr" apps
+- [Smokeping](https://hub.docker.com/r/linuxserver/smokeping) - internet latency statistics
+- [Sungather](https://hub.docker.com/r/pedbarbosa/sungather) - solar panel inverter metrics
+- [Zigbee2MQTT](https://hub.docker.com/r/koenkk/zigbee2mqtt) - Zigbee to MQTT bridge
 
 ## Usage
 
@@ -42,12 +44,24 @@ cp .env_example .env
 vim .env
 ```
 
+If you're running the `networking` profile, also set up Caddy's and DDclient's config files, which are gitignored since they hold your real domain/credentials:
+
+```
+cp config/Caddyfile_example config/Caddyfile
+vim config/Caddyfile
+
+cp config/ddclient.conf_example config/ddclient.conf
+vim config/ddclient.conf
+```
+
 ### Start all services
+
 ```bash
-docker compose up -d
+docker compose --profile all up -d
 ```
 
 ### Start specific service groups using profiles
+
 ```bash
 # Media services only
 docker compose --profile media up -d
@@ -68,7 +82,7 @@ docker compose --profile media --profile monitoring up -d
 - `immich` - Photo management with AI features
 - `media` - Media management and streaming
 - `monitoring` - Health and performance monitoring
-- `networking` - VPN, proxy, SSL services
+- `networking` - VPN, proxy, SSL, dynamic DNS, and mail services
 - `utilities` - Database and utility services
 
 ## Tools
