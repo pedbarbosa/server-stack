@@ -18,7 +18,7 @@ services:
       - ${CONTAINERS_PATH}/rutorrent:/data
       - ${TORRENTS_PATH}:/downloads
     healthcheck:
-      test: ["CMD", "curl", "-ILXGET", "https://www.google.com"]
+      test: ["CMD", "curl", "-ILXGET", "http://localhost:8080"]
     restart: always
 
   jellyfin:
@@ -26,12 +26,21 @@ services:
     container_name: jellyfin
     network_mode: host
     profiles: ["media", "streaming", "all"]
-    runtime: nvidia
+    # Hardware acceleration for transcoding (NVENC)
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities:
+                - gpu
+                - compute
+                - video
     environment:
       PUID: ${PUID}
       PGID: ${PGID}
       TZ: ${TIMEZONE}
-      NVIDIA_VISIBLE_DEVICES: all
     volumes:
       - ${CONTAINERS_PATH}/jellyfin:/config
       - ${VIDEO_PATH}/Movies:/data/movies
@@ -50,8 +59,8 @@ services:
         condition: service_healthy
         restart: true
     environment:
-      PUID: 1001
-      PGID: 1002
+      PUID: ${KODI_PUID}
+      PGID: ${KODI_PGID}
       TZ: ${TIMEZONE}
     volumes:
       - ${CONTAINERS_PATH}/kodi:/config/.kodi
@@ -75,7 +84,7 @@ services:
       - ${TORRENTS_PATH}:/downloads
     ports:
       - "8686:8686"
-    restart: unless-stopped
+    restart: always
 
   prowlarr:
     image: linuxserver/prowlarr
@@ -162,7 +171,7 @@ services:
       timeout: 3s
       interval: 15s
       retries: 3
-    restart: unless-stopped
+    restart: always
 
   sonarr:
     image: linuxserver/sonarr

@@ -143,4 +143,4 @@ nvidia-ctk runtime configure
 systemctl restart docker
 ```
 
-If not available or not required, remove the 'runtime' and the 'NVIDIA_VISIBLE_DEVICES' environment variable from the 'jellyfin' container
+If not available or not required, remove the 'deploy' block from the 'jellyfin' container

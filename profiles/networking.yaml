@@ -4,7 +4,7 @@ services:
     image: qmcgaw/gluetun
     network_mode: bridge
     container_name: gluetun
-    profiles: ["networking", "vpn", "all"]
+    profiles: ["networking", "media", "vpn", "all"]
     cap_add:
       - NET_ADMIN
     devices:
