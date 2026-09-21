@@ -1,9 +1,11 @@
 #!/usr/bin/env bash
 
 declare -A DEPENDENT_CONTAINERS=(
-    ["gluetun"]="rutorrent"
+    ["gluetun"]="rutorrent qbittorrent"
     ["mariadb"]="homeassistant kodi"
     ["mosquitto"]="zigbee2mqtt"
+    ["victoriametrics"]="grafana"
+    ["victorialogs"]="grafana"
 )
 
 check_priority() {

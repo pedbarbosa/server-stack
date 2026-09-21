@@ -1,7 +1,7 @@
 # Media management and streaming services
 services:
   rutorrent:
-    image: crazymax/rtorrent-rutorrent:latest
+    image: crazymax/rtorrent-rutorrent:5.3.1-0.16.13 # pinning version due to past downloads issues
     network_mode: service:gluetun
     container_name: rutorrent
     profiles: ["media", "torrents", "all"]
@@ -89,6 +89,33 @@ services:
       - ${CONTAINERS_PATH}/prowlarr:/config
     ports:
       - "9696:9696/tcp"
+    restart: always
+
+  qbittorrent:
+    image: lscr.io/linuxserver/qbittorrent
+    container_name: qbittorrent
+    network_mode: service:gluetun
+    profiles: ["media", "torrents", "all"]
+    depends_on:
+      gluetun:
+        condition: service_healthy
+        restart: true
+    environment:
+      PUID: ${PUID}
+      PGID: ${PGID}
+      TZ: ${TIMEZONE}
+      WEBUI_PORT: 8090
+      TORRENTING_PORT: 59426
+    volumes:
+      - ${CONTAINERS_PATH}/qbittorrent:/config
+      - ${TORRENTS_PATH}:/downloads
+    healthcheck:
+      test:
+        ["CMD-SHELL", "curl -fsS http://localhost:8090/ >/dev/null || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
     restart: always
 
   radarr:

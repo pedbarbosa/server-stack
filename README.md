@@ -11,6 +11,7 @@ This Docker Compose stack uses the following web services:
 - [Jellyfin](https://hub.docker.com/r/linuxserver/jellyfin) - private media streaming
 - [Lidarr](https://hub.docker.com/r/blampe/lidarr) - music management
 - [ProjectSend](https://hub.docker.com/r/linuxserver/projectsend) - private file sharing
+- [qBittorrent](https://hub.docker.com/r/linuxserver/qbittorrent) - torrent handling (backed by a [gluetun](https://hub.docker.com/r/qmcgaw/gluetun) VPN client)
 - [Radarr](https://hub.docker.com/r/linuxserver/radarr) - movie management
 - [RuTorrent](https://hub.docker.com/r/crazymax/rtorrent-rutorrent) - torrent handling (backed by a [gluetun](https://hub.docker.com/r/qmcgaw/gluetun) VPN client)
 - [Seerr](https://ghcr.io/seerr-team/seerr) - Movie and TV show request handling
@@ -25,6 +26,7 @@ as well as the following support services:
 - [Cloudflared](https://hub.docker.com/r/cloudflare/cloudflared) - secure tunnel to Cloudflare
 - [Collectd Graph Panel](https://hub.docker.com/r/pedbarbosa/cgp) - collectd statistics viewer
 - [DDclient](https://hub.docker.com/r/linuxserver/ddclient) - dynamic DNS updates
+- [Grafana](https://hub.docker.com/r/grafana/grafana) - metrics and logs dashboards
 - [KODI](https://hub.docker.com/r/matthuisman/kodi-headless) - headless KODI server
 - [LibreSpeed](https://lscr.io/linuxserver/librespeed) - private speed testing
 - [MariaDB](https://hub.docker.com/r/linuxserver/mariadb) - SQL server
@@ -33,6 +35,8 @@ as well as the following support services:
 - [Prowlarr](https://hub.docker.com/r/linuxserver/prowlarr) - index manager for "arr" apps
 - [Smokeping](https://hub.docker.com/r/linuxserver/smokeping) - internet latency statistics
 - [Sungather](https://hub.docker.com/r/pedbarbosa/sungather) - solar panel inverter metrics
+- [VictoriaLogs](https://hub.docker.com/r/victoriametrics/victoria-logs) - log storage for Grafana
+- [VictoriaMetrics](https://hub.docker.com/r/victoriametrics/victoria-metrics) - metrics storage for Grafana
 - [Zigbee2MQTT](https://hub.docker.com/r/koenkk/zigbee2mqtt) - Zigbee to MQTT bridge
 
 ## Usage
