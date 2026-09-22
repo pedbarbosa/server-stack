@@ -1,7 +1,7 @@
 # Media management and streaming services
 services:
   rutorrent:
-    image: crazymax/rtorrent-rutorrent:latest
+    image: crazymax/rtorrent-rutorrent:5.3.1-0.16.13 # pinning version due to past downloads issues
     network_mode: service:gluetun
     container_name: rutorrent
     profiles: ["media", "torrents", "all"]
@@ -18,7 +18,7 @@ services:
       - ${CONTAINERS_PATH}/rutorrent:/data
       - ${TORRENTS_PATH}:/downloads
     healthcheck:
-      test: ["CMD", "curl", "-ILXGET", "https://www.google.com"]
+      test: ["CMD", "curl", "-ILXGET", "http://localhost:8080"]
     restart: always
 
   jellyfin:
@@ -26,12 +26,21 @@ services:
     container_name: jellyfin
     network_mode: host
     profiles: ["media", "streaming", "all"]
-    runtime: nvidia
+    # Hardware acceleration for transcoding (NVENC)
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities:
+                - gpu
+                - compute
+                - video
     environment:
       PUID: ${PUID}
       PGID: ${PGID}
       TZ: ${TIMEZONE}
-      NVIDIA_VISIBLE_DEVICES: all
     volumes:
       - ${CONTAINERS_PATH}/jellyfin:/config
       - ${VIDEO_PATH}/Movies:/data/movies
@@ -50,8 +59,8 @@ services:
         condition: service_healthy
         restart: true
     environment:
-      PUID: 1001
-      PGID: 1002
+      PUID: ${KODI_PUID}
+      PGID: ${KODI_PGID}
       TZ: ${TIMEZONE}
     volumes:
       - ${CONTAINERS_PATH}/kodi:/config/.kodi
@@ -62,7 +71,7 @@ services:
     restart: always
 
   lidarr:
-    image: blampe/lidarr
+    image: linuxserver/lidarr:develop
     container_name: lidarr
     profiles: ["media", "arr", "all"]
     environment:
@@ -75,7 +84,7 @@ services:
       - ${TORRENTS_PATH}:/downloads
     ports:
       - "8686:8686"
-    restart: unless-stopped
+    restart: always
 
   prowlarr:
     image: linuxserver/prowlarr
@@ -91,6 +100,33 @@ services:
       - "9696:9696/tcp"
     restart: always
 
+  qbittorrent:
+    image: lscr.io/linuxserver/qbittorrent
+    container_name: qbittorrent
+    network_mode: service:gluetun
+    profiles: ["media", "torrents", "all"]
+    depends_on:
+      gluetun:
+        condition: service_healthy
+        restart: true
+    environment:
+      PUID: ${PUID}
+      PGID: ${PGID}
+      TZ: ${TIMEZONE}
+      WEBUI_PORT: 8090
+      TORRENTING_PORT: 59426
+    volumes:
+      - ${CONTAINERS_PATH}/qbittorrent:/config
+      - ${TORRENTS_PATH}:/downloads
+    healthcheck:
+      test:
+        ["CMD-SHELL", "curl -fsS http://localhost:8090/ >/dev/null || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    restart: always
+
   radarr:
     image: linuxserver/radarr
     container_name: radarr
@@ -100,6 +136,7 @@ services:
       PUID: ${PUID}
       PGID: ${PGID}
       TZ: ${TIMEZONE}
+      RADARR_API_KEY: ${RADARR_API_KEY}
     volumes:
       - ${VIDEO_PATH}/Movies:/movies
       - ${TORRENTS_PATH}:/downloads
@@ -107,12 +144,7 @@ services:
     ports:
       - "7878:7878/tcp"
     healthcheck:
-      test: >
-        /bin/sh -c '
-        if [ -z "$RADARR_API_KEY" ]; then 
-          exit 0; 
-        fi; 
-        curl -f "http://localhost:7878/api/v3/health?apikey=$RADARR_API_KEY" || exit 1'
+      test: ["CMD-SHELL", "curl -f \"http://localhost:7878/api/v3/health?apikey=$RADARR_API_KEY\" || exit 1"]
       interval: 5m00s
       timeout: 10s
       retries: 2
@@ -123,6 +155,7 @@ services:
     image: ghcr.io/seerr-team/seerr:latest
     init: true
     container_name: seerr
+    profiles: ["media", "requests", "all"]
     environment:
       LOG_LEVEL: "debug"
       PUID: ${PUID}
@@ -138,26 +171,6 @@ services:
       timeout: 3s
       interval: 15s
       retries: 3
-    restart: unless-stopped
-
-  sickchill:
-    image: linuxserver/sickchill:2024.3.1
-    container_name: sickchill
-    profiles: ["media", "tv", "all"]
-    environment:
-      PUID: ${PUID}
-      PGID: ${PGID}
-      TZ: ${TIMEZONE}
-    volumes:
-      - ${CONTAINERS_PATH}/sickchill:/config
-      - ${TORRENTS_PATH}:/torrents
-      - ${VIDEO_PATH}:/video
-    ports:
-      - "8081:8081"
-    healthcheck:
-      test: ["CMD", "wget", "http://0.0.0.0:8081", "--spider", "-q"]
-      timeout: 5s
-      retries: 10
     restart: always
 
   sonarr:
@@ -168,6 +181,7 @@ services:
       PUID: ${PUID}
       PGID: ${PGID}
       TZ: ${TIMEZONE}
+      SONARR_API_KEY: ${SONARR_API_KEY}
     volumes:
       - ${CONTAINERS_PATH}/sonarr:/config
       - ${VIDEO_PATH}/TV:/tv
@@ -175,12 +189,7 @@ services:
     ports:
       - "8989:8989"
     healthcheck:
-      test: >
-        /bin/sh -c '
-        if [ -z "$SONARR_API_KEY" ]; then 
-          exit 0; 
-        fi; 
-        curl -f "http://localhost:8989/api/v3/health?apikey=${SONARR_API_KEY}" || exit 1'
+      test: ["CMD-SHELL", "curl -f \"http://localhost:8989/api/v3/health?apikey=${SONARR_API_KEY}\" || exit 1"]
       interval: 5m00s
       timeout: 10s
       retries: 2

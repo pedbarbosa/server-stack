@@ -1,0 +1,173 @@
+# Caddyfile - reverse proxy + automatic SSL certificates via the Cloudflare DNS challenge
+#
+# Copy this file to 'Caddyfile' (no extension) in this same directory and replace every
+# <DOMAIN> / <EMAIL> placeholder below. It's mounted read-only into the 'caddy' container,
+# which is expected to be a build with the caddy-dns/cloudflare plugin baked in (hence
+# CLOUDFLARE_API_TOKEN being passed to it in docker-compose.yaml) so it can issue certificates
+# without exposing port 80/443 to the public internet.
+#
+# The 'caddy' container only joins the 'caddy' bridge network, not the network of the other
+# services, so each site block below proxies to the service's port published on the host
+# (see each service's 'ports:' entry in profiles/*.yaml) via 'host.docker.internal', which
+# is wired up through 'extra_hosts' in profiles/networking.yaml. Remove any block for a
+# service/profile you don't run.
+
+{
+	admin off
+	email <EMAIL>
+
+    log {
+        format json {
+            time_format iso8601
+            time_local
+        }
+    }
+}
+
+:2019 {
+    metrics /metrics
+}
+
+# Cloudflare DNS provider for TLS certificate management
+(cloudflare_tls) {
+    tls {
+        dns cloudflare {env.CLOUDFLARE_API_TOKEN}
+    }
+}
+
+# Static content
+static.<DOMAIN> {
+    import cloudflare_tls
+    root * /html
+    file_server
+}
+
+# --- home-automation profile ---
+
+homeassistant.<DOMAIN> {
+    import cloudflare_tls
+	reverse_proxy host.docker.internal:8123
+}
+
+sungather.<DOMAIN> {
+    import cloudflare_tls
+	reverse_proxy host.docker.internal:8086
+}
+
+zigbee2mqtt.<DOMAIN> {
+    import cloudflare_tls
+	reverse_proxy host.docker.internal:8087
+}
+
+# --- immich profile ---
+
+immich.<DOMAIN> {
+    import cloudflare_tls
+	reverse_proxy host.docker.internal:2283
+}
+
+# --- media profile ---
+
+jellyfin.<DOMAIN> {
+    import cloudflare_tls
+
+    encode zstd gzip
+
+    @video path *.mp4 *.mkv *.webm *.avi
+    header @video {
+        Content-Encoding ""
+    }
+
+    reverse_proxy host.docker.internal:8096 {
+        header_up Host {host}
+        header_up X-Real-IP {remote_host}
+
+        flush_interval -1
+
+        transport http {
+            versions 1.1
+            dial_timeout 10s
+            response_header_timeout 0
+        }
+    }
+}
+
+kodi.<DOMAIN> {
+    import cloudflare_tls
+	reverse_proxy host.docker.internal:8088
+}
+
+lidarr.<DOMAIN> {
+    import cloudflare_tls
+	reverse_proxy host.docker.internal:8686
+}
+
+prowlarr.<DOMAIN> {
+    import cloudflare_tls
+	reverse_proxy host.docker.internal:9696
+}
+
+radarr.<DOMAIN> {
+    import cloudflare_tls
+	reverse_proxy host.docker.internal:7878
+}
+
+rutorrent.<DOMAIN> {
+	# served through gluetun's published port, not rutorrent's own
+    import cloudflare_tls
+    reverse_proxy host.docker.internal:8082 {
+        header_up Host {host}
+        header_up X-Real-IP {remote_host}
+        transport http {
+            versions 1.1
+            dial_timeout 10s
+            response_header_timeout 0
+        }
+    }
+}
+
+seerr.<DOMAIN> {
+    import cloudflare_tls
+	reverse_proxy host.docker.internal:5055
+}
+
+sonarr.<DOMAIN> {
+    import cloudflare_tls
+	reverse_proxy host.docker.internal:8989
+}
+
+# --- monitoring profile ---
+
+cgp.<DOMAIN> {
+    import cloudflare_tls
+	reverse_proxy host.docker.internal:8085
+}
+
+librespeed.<DOMAIN> {
+    import cloudflare_tls
+	reverse_proxy host.docker.internal:8089
+}
+
+smokeping.<DOMAIN> {
+    import cloudflare_tls
+	reverse_proxy host.docker.internal:8098
+}
+
+# --- utilities profile ---
+
+projectsend.<DOMAIN> {
+    import cloudflare_tls
+    reverse_proxy host.docker.internal:8083 {
+        flush_interval -1
+    }
+}
+
+syncthing.<DOMAIN> {
+    import cloudflare_tls
+	reverse_proxy host.docker.internal:8384
+}
+
+vaultwarden.<DOMAIN> {
+    import cloudflare_tls
+	reverse_proxy host.docker.internal:8084
+}
