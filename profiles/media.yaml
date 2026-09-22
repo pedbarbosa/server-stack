@@ -71,7 +71,7 @@ services:
     restart: always
 
   lidarr:
-    image: blampe/lidarr
+    image: linuxserver/lidarr:develop
     container_name: lidarr
     profiles: ["media", "arr", "all"]
     environment:
