@@ -13,10 +13,10 @@ This Docker Compose stack uses the following web services:
 - [ProjectSend](https://hub.docker.com/r/linuxserver/projectsend) - private file sharing
 - [qBittorrent](https://hub.docker.com/r/linuxserver/qbittorrent) - torrent handling (backed by a [gluetun](https://hub.docker.com/r/qmcgaw/gluetun) VPN client)
 - [Radarr](https://hub.docker.com/r/linuxserver/radarr) - movie management
-- [RuTorrent](https://hub.docker.com/r/crazymax/rtorrent-rutorrent) - torrent handling (backed by a [gluetun](https://hub.docker.com/r/qmcgaw/gluetun) VPN client)
+- [RuTorrent](https://hub.docker.com/r/crazymax/rtorrent-rutorrent) - torrent handling (pending removal, replaced by qBittorrent)
 - [Seerr](https://ghcr.io/seerr-team/seerr) - Movie and TV show request handling
 - [Sonarr](https://hub.docker.com/r/linuxserver/sonarr) - TV shows management
-- [Syncthing](https://hub.docker.com/r/linuxserver/syncthing) - private backups
+- [Syncthing](https://hub.docker.com/r/linuxserver/syncthing) - backups for portable devices
 - [Vaultwarden](https://hub.docker.com/r/vaultwarden/server) - password management
 
 as well as the following support services:
@@ -28,7 +28,7 @@ as well as the following support services:
 - [Grafana](https://hub.docker.com/r/grafana/grafana) - metrics and logs dashboards
 - [KODI](https://hub.docker.com/r/matthuisman/kodi-headless) - headless KODI server
 - [LibreSpeed](https://lscr.io/linuxserver/librespeed) - private speed testing
-- [MariaDB](https://hub.docker.com/r/linuxserver/mariadb) - SQL server
+- [MariaDB](https://hub.docker.com/r/linuxserver/mariadb) - SQL server for HomeAssistant, Kodi and ProjectSend
 - [Mosquitto](https://hub.docker.com/_/eclipse-mosquitto) - MQTT server
 - [Postfix](https://hub.docker.com/r/pedbarbosa/postfix) - mail server
 - [Prowlarr](https://hub.docker.com/r/linuxserver/prowlarr) - index manager for "arr" apps
