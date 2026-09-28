@@ -21,7 +21,6 @@ This Docker Compose stack uses the following web services:
 
 as well as the following support services:
 
-- [Autoheal](https://hub.docker.com/r/willfarrell/autoheal) - container monitoring
 - [Caddy](https://hub.docker.com/r/pedbarbosa/caddy) - web proxy and SSL certificate handler
 - [Cloudflared](https://hub.docker.com/r/cloudflare/cloudflared) - secure tunnel to Cloudflare
 - [Collectd Graph Panel](https://hub.docker.com/r/pedbarbosa/cgp) - collectd statistics viewer
