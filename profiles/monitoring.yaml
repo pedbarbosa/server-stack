@@ -1,5 +1,16 @@
 # Monitoring and health services
 services:
+  autoheal:
+    image: willfarrell/autoheal
+    container_name: autoheal
+    profiles: ["monitoring", "health", "all"]
+    environment:
+      AUTOHEAL_CONTAINER_LABEL: all
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - /var/run/docker.sock:/var/run/docker.sock
+    restart: always
+
   cgp:
     image: pedbarbosa/cgp
     container_name: cgp
