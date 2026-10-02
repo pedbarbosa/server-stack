@@ -24,6 +24,33 @@ services:
       test: ["CMD", "curl", "-ILXGET", "http://localhost"]
     restart: always
 
+  grafana:
+    image: grafana/grafana
+    container_name: grafana
+    profiles: ["monitoring", "graphs", "all"]
+    user: "${PUID}:${PGID}"
+    volumes:
+      - ${CONTAINERS_PATH}/grafana/data:/var/lib/grafana
+      - ${CONTAINERS_PATH}/grafana/provisioning/datasources:/etc/grafana/provisioning/datasources:ro
+      - ${CONTAINERS_PATH}/grafana/provisioning/dashboards:/etc/grafana/provisioning/dashboards:ro
+      - ${CONTAINERS_PATH}/grafana/dashboards:/var/lib/grafana/dashboards:ro
+    environment:
+      - TZ=${TIMEZONE}
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD}
+      - GF_SERVER_ROOT_URL=https://grafana.${MY_DOMAIN}
+      - GF_USERS_ALLOW_SIGN_UP=false
+      - GF_ANALYTICS_REPORTING_ENABLED=false
+      - GF_ANALYTICS_CHECK_FOR_UPDATES=false
+      - GF_ENTERPRISE_NAV_MANAGEMENT_ENABLED=false
+      - GF_ENTERPRISE_CLOUD_MANAGEMENT_ENABLED=false
+      - GF_PLUGINS_APPS_MANAGEMENT_ENABLED=false
+    ports:
+      - "3000:3000"
+    depends_on:
+      - victorialogs
+      - victoriametrics
+    restart: always
+
   librespeed:
     image: lscr.io/linuxserver/librespeed
     container_name: librespeed
@@ -54,4 +81,40 @@ services:
       - 8098:80
     healthcheck:
       test: ["CMD", "wget", "http://localhost:80", "--spider", "-q"]
+    restart: always
+
+  victorialogs:
+    image: victoriametrics/victoria-logs
+    container_name: victorialogs
+    profiles: ["monitoring", "graphs", "all"]
+    volumes:
+      - ${CONTAINERS_PATH}/victorialogs:/victoria-logs-data
+    ports:
+      - "9428:9428"
+      - "29514:29514"
+    environment:
+      - TZ=${TIMEZONE}
+    command:
+      - "-storageDataPath=/victoria-logs-data"
+      - "-syslog.listenAddr.tcp=:29514"
+    restart: always
+
+  victoriametrics:
+    image: victoriametrics/victoria-metrics
+    container_name: victoriametrics
+    profiles: ["monitoring", "graphs", "all"]
+    command:
+      - "--storageDataPath=/storage"
+      - "--retentionPeriod=12"
+      - "--httpListenAddr=:8428"
+      - "--graphiteListenAddr=:2003"
+      - "--relabelConfig=/etc/victoriametrics/relabel.yaml"
+    volumes:
+      - ${CONTAINERS_PATH}/victoriametrics/data:/storage
+      - ${CONTAINERS_PATH}/victoriametrics/relabel.yaml:/etc/victoriametrics/relabel.yaml:ro
+    ports:
+      - "8428:8428"
+      - "2003:2003"
+    environment:
+      - TZ=${TIMEZONE}
     restart: always

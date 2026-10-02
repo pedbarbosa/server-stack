@@ -3,7 +3,7 @@ services:
   homeassistant:
     image: homeassistant/home-assistant:latest
     container_name: homeassistant
-    profiles: ["home-automation", "core", "all"]
+    profiles: ["home-automation", "all"]
     network_mode: host
     depends_on:
       mariadb:
@@ -67,4 +67,3 @@ services:
         condition: service_healthy
         restart: true
     restart: always
-

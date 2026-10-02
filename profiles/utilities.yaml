@@ -3,7 +3,7 @@ services:
   mariadb:
     image: linuxserver/mariadb
     container_name: mariadb
-    profiles: ["utilities", "database", "all"]
+    profiles: ["utilities", "home-automation", "media", "database", "all"]
     environment:
       PUID: ${PUID}
       PGID: ${PGID}
@@ -59,6 +59,7 @@ services:
     profiles: ["utilities", "passwords", "all"]
     environment:
       ADMIN_TOKEN: ${VAULT_TOKEN}
+      SIGNUPS_ALLOWED: "false"
     volumes:
       - /etc/localtime:/etc/localtime:ro
       - ${CONTAINERS_PATH}/vaultwarden:/data
