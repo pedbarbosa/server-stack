@@ -7,3 +7,6 @@
 # Protected configuration
 config/Caddyfile
 config/ddclient.conf
+
+# Test scripts
+test/
