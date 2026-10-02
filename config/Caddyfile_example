@@ -112,20 +112,6 @@ radarr.<DOMAIN> {
 	reverse_proxy host.docker.internal:7878
 }
 
-rutorrent.<DOMAIN> {
-	# served through gluetun's published port, not rutorrent's own
-    import cloudflare_tls
-    reverse_proxy host.docker.internal:8082 {
-        header_up Host {host}
-        header_up X-Real-IP {remote_host}
-        transport http {
-            versions 1.1
-            dial_timeout 10s
-            response_header_timeout 0
-        }
-    }
-}
-
 seerr.<DOMAIN> {
     import cloudflare_tls
 	reverse_proxy host.docker.internal:5055

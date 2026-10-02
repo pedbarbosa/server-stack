@@ -13,7 +13,6 @@ This Docker Compose stack uses the following web services:
 - [ProjectSend](https://hub.docker.com/r/linuxserver/projectsend) - private file sharing
 - [qBittorrent](https://hub.docker.com/r/linuxserver/qbittorrent) - torrent handling (backed by a [gluetun](https://hub.docker.com/r/qmcgaw/gluetun) VPN client)
 - [Radarr](https://hub.docker.com/r/linuxserver/radarr) - movie management
-- [RuTorrent](https://hub.docker.com/r/crazymax/rtorrent-rutorrent) - torrent handling (pending removal, replaced by qBittorrent)
 - [Seerr](https://ghcr.io/seerr-team/seerr) - Movie and TV show request handling
 - [Sonarr](https://hub.docker.com/r/linuxserver/sonarr) - TV shows management
 - [Syncthing](https://hub.docker.com/r/linuxserver/syncthing) - backups for portable devices
