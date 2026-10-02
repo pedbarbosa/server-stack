@@ -107,6 +107,11 @@ prowlarr.<DOMAIN> {
 	reverse_proxy host.docker.internal:9696
 }
 
+qbittorrent.<DOMAIN> {
+    import cloudflare_tls
+	reverse_proxy host.docker.internal:8090
+}
+
 radarr.<DOMAIN> {
     import cloudflare_tls
 	reverse_proxy host.docker.internal:7878
