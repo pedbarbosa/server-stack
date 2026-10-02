@@ -10,7 +10,6 @@ services:
     devices:
       - /dev/net/tun:/dev/net/tun
     ports:
-      - "8082:8080"       # RuTorrent
       - "8090:8090"       # qBittorrent WebUI
       - "8888:8888/tcp"   # HTTP proxy
       - "8388:8388/tcp"   # Shadowsocks
@@ -25,7 +24,7 @@ services:
       SERVER_CITIES: ${CITY}
     healthcheck:
       # gluetun's built-in check; it restarts the VPN internally, so only flag a sustained outage for autoheal,
-      # as restarting this container leaves qbittorrent/rutorrent stranded in its old network namespace
+      # as restarting this container leaves qbittorrent stranded in its old network namespace
       test: ["CMD", "/gluetun-entrypoint", "healthcheck"]
       interval: 60s
       timeout: 5s

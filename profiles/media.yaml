@@ -1,26 +1,5 @@
 # Media management and streaming services
 services:
-  rutorrent:
-    image: crazymax/rtorrent-rutorrent:5.3.1-0.16.13 # pinning version due to past downloads issues
-    network_mode: service:gluetun
-    container_name: rutorrent
-    profiles: ["media", "torrents", "all"]
-    depends_on:
-      gluetun:
-        condition: service_healthy
-        restart: true
-    environment:
-      PUID: ${PUID}
-      PGID: ${PGID}
-      TZ: ${TIMEZONE}
-      XMLRPC_PORT: 8008 # due to conflict with Gluetun's Control Panel port
-    volumes:
-      - ${CONTAINERS_PATH}/rutorrent:/data
-      - ${TORRENTS_PATH}:/downloads
-    healthcheck:
-      test: ["CMD", "curl", "-ILXGET", "https://www.google.com"] # we're testing VPN reachability here
-    restart: always
-
   jellyfin:
     image: linuxserver/jellyfin
     container_name: jellyfin
