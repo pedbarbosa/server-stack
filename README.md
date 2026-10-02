@@ -9,7 +9,7 @@ This Docker Compose stack uses the following web services:
 - [HomeAssistant](https://hub.docker.com/r/homeassistant/home-assistant) - home automation
 - [Immich](https://ghcr.io/immich-app/immich-server) - photo archive
 - [Jellyfin](https://hub.docker.com/r/linuxserver/jellyfin) - private media streaming
-- [Lidarr](https://hub.docker.com/r/blampe/lidarr) - music management
+- [Lidarr](https://hub.docker.com/r/linuxserver/lidarr) - music management
 - [ProjectSend](https://hub.docker.com/r/linuxserver/projectsend) - private file sharing
 - [qBittorrent](https://hub.docker.com/r/linuxserver/qbittorrent) - torrent handling (backed by a [gluetun](https://hub.docker.com/r/qmcgaw/gluetun) VPN client)
 - [Radarr](https://hub.docker.com/r/linuxserver/radarr) - movie management
