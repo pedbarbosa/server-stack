@@ -24,9 +24,13 @@ services:
       SERVER_COUNTRIES: ${COUNTRY}
       SERVER_CITIES: ${CITY}
     healthcheck:
-      test: ["CMD", "wget", "https://www.google.com", "--spider", "-q"]
-      start_period: 10s
+      # gluetun's built-in check; it restarts the VPN internally, so only flag a sustained outage for autoheal,
+      # as restarting this container leaves qbittorrent/rutorrent stranded in its old network namespace
+      test: ["CMD", "/gluetun-entrypoint", "healthcheck"]
+      interval: 60s
       timeout: 5s
+      retries: 5
+      start_period: 30s
     restart: always
 
   caddy:

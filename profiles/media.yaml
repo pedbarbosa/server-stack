@@ -119,8 +119,9 @@ services:
       - ${CONTAINERS_PATH}/qbittorrent:/config
       - ${TORRENTS_PATH}:/downloads
     healthcheck:
+      # tun0 is missing when gluetun restarted underneath us (stale network namespace), WebUI still answers on lo
       test:
-        ["CMD-SHELL", "curl -fsS http://localhost:8090/ >/dev/null || exit 1"]
+        ["CMD-SHELL", "[ -e /sys/class/net/tun0 ] && curl -fsS --max-time 5 http://localhost:8090/ >/dev/null || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 3
