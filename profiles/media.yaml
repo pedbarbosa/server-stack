@@ -212,3 +212,19 @@ services:
       retries: 2
       start_period: 30s
     restart: always
+
+  unpackerr:
+    image: golift/unpackerr
+    container_name: unpackerr
+    profiles: ["media", "arr", "all"]
+    user: ${PUID}:${PGID}
+    environment:
+      TZ: ${TIMEZONE}
+      UN_LOG_FILE: /downloads/unpackerr.log
+      UN_SONARR_0_URL: http://sonarr:8989
+      UN_SONARR_0_API_KEY: ${SONARR_API_KEY}
+      UN_RADARR_0_URL: http://radarr:7878
+      UN_RADARR_0_API_KEY: ${RADARR_API_KEY}
+    volumes:
+      - ${TORRENTS_PATH}:/downloads
+    restart: always

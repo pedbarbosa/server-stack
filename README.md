@@ -34,6 +34,7 @@ as well as the following support services:
 - [qBittorrent age tagger](https://hub.docker.com/r/pedbarbosa/qbittorrent-age-tagger) - tags torrents older than 15 days
 - [Smokeping](https://hub.docker.com/r/linuxserver/smokeping) - internet latency statistics
 - [Sungather](https://hub.docker.com/r/pedbarbosa/sungather) - solar panel inverter metrics
+- [Unpackerr](https://hub.docker.com/r/golift/unpackerr) - extracts archived downloads for Radarr and Sonarr
 - [VictoriaLogs](https://hub.docker.com/r/victoriametrics/victoria-logs) - log storage for Grafana
 - [VictoriaMetrics](https://hub.docker.com/r/victoriametrics/victoria-metrics) - metrics storage for Grafana
 - [Zigbee2MQTT](https://hub.docker.com/r/koenkk/zigbee2mqtt) - Zigbee to MQTT bridge
