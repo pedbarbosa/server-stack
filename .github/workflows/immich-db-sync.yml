@@ -1,0 +1,180 @@
+name: Sync Immich database images
+
+# Keeps immich-postgres and immich-redis in profiles/immich.yaml on the images
+# used by the latest Immich release's docker-compose.yml. The server images
+# follow IMMICH_VERSION (set to "release" in .env), so they aren't touched here.
+#
+# Each change is validated by pulling and starting both images, then raised as
+# a PR. Digest and extension bumps are merged automatically; a new Postgres or
+# Valkey major version (which needs a data migration) is left open for review.
+
+on:
+  schedule:
+    - cron: "46 20 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: immich-db-sync
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+      IMMICH_FILE: profiles/immich.yaml
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Compare with the latest Immich release
+        id: compare
+        run: |
+          tag=$(gh release view --repo immich-app/immich --json tagName --jq .tagName)
+          curl -fsSL "https://github.com/immich-app/immich/releases/download/${tag}/docker-compose.yml" -o "$RUNNER_TEMP/upstream.yml"
+
+          new_postgres=$(yq '.services.database.image' "$RUNNER_TEMP/upstream.yml")
+          new_redis=$(yq '.services.redis.image' "$RUNNER_TEMP/upstream.yml")
+          old_postgres=$(yq '.services["immich-postgres"].image' "$IMMICH_FILE")
+          old_redis=$(yq '.services["immich-redis"].image' "$IMMICH_FILE")
+
+          for image in "$new_postgres" "$new_redis"; do
+            if [[ "$image" != *@sha256:* ]]; then
+              echo "::error::Upstream image '$image' is not pinned to a digest"
+              exit 1
+            fi
+          done
+
+          # Repository plus major version, e.g. ghcr.io/immich-app/postgres:14
+          major() {
+            local ref="${1%@*}"
+            local tag="${ref##*:}"
+            echo "${ref%:*}:${tag%%-*}"
+          }
+
+          major_change=false
+          if [[ "$(major "$old_postgres")" != "$(major "$new_postgres")" || "$(major "$old_redis")" != "$(major "$new_redis")" ]]; then
+            major_change=true
+          fi
+
+          changed=false
+          if [[ "$old_postgres" != "$new_postgres" || "$old_redis" != "$new_redis" ]]; then
+            changed=true
+          fi
+
+          {
+            echo "tag=$tag"
+            echo "branch=immich-db-sync/$tag"
+            echo "changed=$changed"
+            echo "major_change=$major_change"
+            echo "old_postgres=$old_postgres"
+            echo "new_postgres=$new_postgres"
+            echo "old_redis=$old_redis"
+            echo "new_redis=$new_redis"
+          } >> "$GITHUB_OUTPUT"
+
+          echo "Immich $tag: postgres $([[ "$old_postgres" == "$new_postgres" ]] && echo unchanged || echo changed), redis $([[ "$old_redis" == "$new_redis" ]] && echo unchanged || echo changed)"
+
+      - name: Skip if a PR for this release already exists
+        id: existing
+        if: steps.compare.outputs.changed == 'true'
+        env:
+          BRANCH: ${{ steps.compare.outputs.branch }}
+        run: |
+          # A leftover branch means a PR is waiting for review, or was closed
+          # without merging. Either way, wait for the next release.
+          if git ls-remote --exit-code --heads origin "$BRANCH" > /dev/null; then
+            echo "Branch $BRANCH already exists, nothing to do"
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Update image references
+        if: steps.compare.outputs.changed == 'true' && steps.existing.outputs.skip == 'false'
+        env:
+          OLD_POSTGRES: ${{ steps.compare.outputs.old_postgres }}
+          NEW_POSTGRES: ${{ steps.compare.outputs.new_postgres }}
+          OLD_REDIS: ${{ steps.compare.outputs.old_redis }}
+          NEW_REDIS: ${{ steps.compare.outputs.new_redis }}
+        run: |
+          # Plain string replacement, so the file's comments and layout are kept
+          python3 - <<'EOF'
+          import os
+          path = os.environ["IMMICH_FILE"]
+          with open(path) as f:
+              content = f.read()
+          for name in ("POSTGRES", "REDIS"):
+              old, new = os.environ[f"OLD_{name}"], os.environ[f"NEW_{name}"]
+              assert content.count(f"image: {old}\n") == 1, f"{old} not found exactly once"
+              content = content.replace(f"image: {old}\n", f"image: {new}\n")
+          with open(path, "w") as f:
+              f.write(content)
+          EOF
+          git diff
+
+      - name: Pull, start and wait for healthy containers
+        if: steps.compare.outputs.changed == 'true' && steps.existing.outputs.skip == 'false'
+        env:
+          CONTAINERS_PATH: ${{ runner.temp }}/containers
+          TIMEZONE: Etc/UTC
+          IMMICH_DB_PASSWORD: ci_password
+          IMMICH_DB_USERNAME: immich
+          IMMICH_DB_DATABASE_NAME: immich
+        run: |
+          compose() { docker compose -f "$IMMICH_FILE" --profile immich "$@"; }
+          compose pull immich-postgres immich-redis
+          compose up -d --wait --wait-timeout 300 immich-postgres immich-redis || {
+            compose ps -a
+            compose logs immich-postgres immich-redis
+            exit 1
+          }
+          compose ps
+          compose down -v
+
+      - name: Raise and merge PR
+        if: steps.compare.outputs.changed == 'true' && steps.existing.outputs.skip == 'false'
+        env:
+          TAG: ${{ steps.compare.outputs.tag }}
+          BRANCH: ${{ steps.compare.outputs.branch }}
+          MAJOR_CHANGE: ${{ steps.compare.outputs.major_change }}
+          OLD_POSTGRES: ${{ steps.compare.outputs.old_postgres }}
+          NEW_POSTGRES: ${{ steps.compare.outputs.new_postgres }}
+          OLD_REDIS: ${{ steps.compare.outputs.old_redis }}
+          NEW_REDIS: ${{ steps.compare.outputs.new_redis }}
+        run: |
+          title="Sync Immich database images with $TAG"
+
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898828+github-actions[bot]@users.noreply.github.com'
+          git switch -c "$BRANCH"
+          git commit -am "$title" -m '[skip ci]'
+          git push origin "$BRANCH"
+
+          body_file="$RUNNER_TEMP/pr-body.md"
+          {
+            echo "Updates the database images to match the [Immich $TAG docker-compose.yml](https://github.com/immich-app/immich/releases/tag/$TAG)."
+            echo
+            echo '| Service | Before | After |'
+            echo '|---|---|---|'
+            echo "| immich-postgres | \`$OLD_POSTGRES\` | \`$NEW_POSTGRES\` |"
+            echo "| immich-redis | \`$OLD_REDIS\` | \`$NEW_REDIS\` |"
+            echo
+            echo 'Both images were pulled and started, and reported healthy.'
+            if [[ "$MAJOR_CHANGE" == 'true' ]]; then
+              echo
+              echo '**Major version change: not merged automatically.** Check the release notes for the migration steps before merging.'
+            fi
+          } > "$body_file"
+
+          pr_url=$(gh pr create --base main --head "$BRANCH" --title "$title" --body-file "$body_file")
+          echo "Opened $pr_url"
+
+          if [[ "$MAJOR_CHANGE" == 'true' ]]; then
+            echo "::warning::Major version change, $pr_url left open for review"
+          else
+            gh pr merge "$pr_url" --squash --delete-branch --subject "$title" --body '[skip ci]'
+          fi
