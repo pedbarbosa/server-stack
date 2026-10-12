@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 declare -A DEPENDENT_CONTAINERS=(
-    ["gluetun"]="qbittorrent"
+    ["gluetun"]="qbittorrent qbittorrent-age-tagger"
     ["mariadb"]="homeassistant kodi"
     ["mosquitto"]="zigbee2mqtt"
     ["victoriametrics"]="grafana"
