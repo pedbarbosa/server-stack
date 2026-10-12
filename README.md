@@ -31,6 +31,7 @@ as well as the following support services:
 - [Mosquitto](https://hub.docker.com/_/eclipse-mosquitto) - MQTT server
 - [Postfix](https://hub.docker.com/r/pedbarbosa/postfix) - mail server
 - [Prowlarr](https://hub.docker.com/r/linuxserver/prowlarr) - index manager for "arr" apps
+- [qBittorrent age tagger](https://hub.docker.com/r/pedbarbosa/qbittorrent-age-tagger) - tags torrents older than 15 days
 - [Smokeping](https://hub.docker.com/r/linuxserver/smokeping) - internet latency statistics
 - [Sungather](https://hub.docker.com/r/pedbarbosa/sungather) - solar panel inverter metrics
 - [VictoriaLogs](https://hub.docker.com/r/victoriametrics/victoria-logs) - log storage for Grafana
