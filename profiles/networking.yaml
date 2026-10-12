@@ -11,8 +11,9 @@ services:
       - /dev/net/tun:/dev/net/tun
     ports:
       - "8090:8090"       # qBittorrent WebUI
-      - "8888:8888/tcp"   # HTTP proxy
-      - "8388:8388/tcp"   # Shadowsocks
+      # Unused: gluetun only serves these with HTTPPROXY=on / SHADOWSOCKS=on
+      # - "8888:8888/tcp"   # HTTP proxy
+      # - "8388:8388/tcp"   # Shadowsocks
       - "59426:59426/tcp" # qBittorrent
       - "59426:59426/udp" # qBittorrent
     environment:
