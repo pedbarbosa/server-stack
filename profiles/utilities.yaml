@@ -1,5 +1,20 @@
 # Utility and productivity services
 services:
+  bgg:
+    image: pedbarbosa/bgg
+    container_name: bgg
+    profiles: ["utilities", "boardgames", "all"]
+    environment:
+      TZ: ${TIMEZONE}
+      BGG_API_KEY: ${BGG_API_KEY}
+      BGG_USERS: ${BGG_USERS}
+    volumes:
+      # A named volume, as the image runs as its own user and needs to write the cache
+      - bgg-cache:/cache
+    ports:
+      - 8000:8000
+    restart: always
+
   mariadb:
     image: linuxserver/mariadb
     container_name: mariadb
@@ -68,3 +83,7 @@ services:
     healthcheck:
       test: ["CMD", "curl", "-ILXGET", "http://localhost"]
     restart: always
+
+volumes:
+  bgg-cache:
+    driver: local

@@ -146,6 +146,11 @@ smokeping.<DOMAIN> {
 
 # --- utilities profile ---
 
+bgg.<DOMAIN> {
+    import cloudflare_tls
+	reverse_proxy host.docker.internal:8000
+}
+
 projectsend.<DOMAIN> {
     import cloudflare_tls
     reverse_proxy host.docker.internal:8083 {
