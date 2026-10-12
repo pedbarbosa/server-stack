@@ -28,7 +28,7 @@ jobs:
       IMMICH_FILE: profiles/immich.yaml
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Compare with the latest Immich release
         id: compare
