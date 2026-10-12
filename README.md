@@ -6,6 +6,7 @@
 
 This Docker Compose stack uses the following web services:
 
+- [BGG](https://hub.docker.com/r/pedbarbosa/bgg) - BoardGameGeek collection page
 - [HomeAssistant](https://hub.docker.com/r/homeassistant/home-assistant) - home automation
 - [Immich](https://ghcr.io/immich-app/immich-server) - photo archive
 - [Jellyfin](https://hub.docker.com/r/linuxserver/jellyfin) - private media streaming

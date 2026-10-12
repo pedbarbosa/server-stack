@@ -43,10 +43,10 @@ jobs:
         run: cat .env
 
       - name: Pull all containers
-        run: docker compose --profile all pull -q  autoheal cgp ddclient mariadb librespeed prowlarr radarr seerr sonarr smokeping
+        run: docker compose --profile all pull -q  autoheal bgg cgp ddclient mariadb librespeed prowlarr radarr seerr sonarr smokeping
 
       - name: Launch some containers
-        run: docker compose --profile all up -d autoheal cgp ddclient mariadb librespeed prowlarr radarr seerr sonarr smokeping
+        run: docker compose --profile all up -d autoheal bgg cgp ddclient mariadb librespeed prowlarr radarr seerr sonarr smokeping
 
       - name: Tear it all down
         if: always()
