@@ -95,12 +95,15 @@ services:
       WEBUI_PORT: 8090
       TORRENTING_PORT: 59426
     volumes:
-      - ${CONTAINERS_PATH}/qbittorrent:/config
+      - ${CONTAINERS_PATH}/qbittorrent:/config/qBittorrent
       - ${TORRENTS_PATH}:/downloads
     healthcheck:
       # tun0 is missing when gluetun restarted underneath us (stale network namespace), WebUI still answers on lo
       test:
-        ["CMD-SHELL", "[ -e /sys/class/net/tun0 ] && curl -fsS --max-time 5 http://localhost:8090/ >/dev/null || exit 1"]
+        [
+          "CMD-SHELL",
+          "[ -e /sys/class/net/tun0 ] && curl -fsS --max-time 5 http://localhost:8090/ >/dev/null || exit 1",
+        ]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -123,10 +126,14 @@ services:
       # The directory is mounted rather than the file, as qBittorrent replaces the file when saving it
       QB_CONFIG_FILE: /qbittorrent/qBittorrent.conf
     volumes:
-      - ${CONTAINERS_PATH}/qbittorrent/qBittorrent:/qbittorrent:ro
+      - ${CONTAINERS_PATH}/qbittorrent:/qbittorrent:ro
     healthcheck:
       # As qbittorrent's, so autoheal restarts it when gluetun restarted underneath us
-      test: ["CMD-SHELL", "[ -e /sys/class/net/tun0 ] && python /app/tagger.py healthcheck"]
+      test:
+        [
+          "CMD-SHELL",
+          "[ -e /sys/class/net/tun0 ] && python /app/tagger.py healthcheck",
+        ]
     restart: always
 
   radarr:
@@ -146,7 +153,11 @@ services:
     ports:
       - "7878:7878/tcp"
     healthcheck:
-      test: ["CMD-SHELL", "curl -f \"http://localhost:7878/api/v3/health?apikey=$RADARR_API_KEY\" || exit 1"]
+      test:
+        [
+          "CMD-SHELL",
+          'curl -f "http://localhost:7878/api/v3/health?apikey=$RADARR_API_KEY" || exit 1',
+        ]
       interval: 5m00s
       timeout: 10s
       retries: 2
@@ -191,7 +202,11 @@ services:
     ports:
       - "8989:8989"
     healthcheck:
-      test: ["CMD-SHELL", "curl -f \"http://localhost:8989/api/v3/health?apikey=${SONARR_API_KEY}\" || exit 1"]
+      test:
+        [
+          "CMD-SHELL",
+          'curl -f "http://localhost:8989/api/v3/health?apikey=${SONARR_API_KEY}" || exit 1',
+        ]
       interval: 5m00s
       timeout: 10s
       retries: 2
