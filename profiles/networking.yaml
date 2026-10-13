@@ -24,9 +24,8 @@ services:
       SERVER_COUNTRIES: ${COUNTRY}
       SERVER_CITIES: ${CITY}
     healthcheck:
-      # gluetun's built-in check; it restarts the VPN internally, so only flag a sustained outage for autoheal,
-      # as restarting this container leaves qbittorrent stranded in its old network namespace
-      test: ["CMD", "/gluetun-entrypoint", "healthcheck"]
+      # Timings for gluetun's built-in check; it restarts the VPN internally, so only flag a sustained outage for
+      # autoheal, as restarting this container leaves qbittorrent stranded in its old network namespace
       interval: 60s
       timeout: 5s
       retries: 5

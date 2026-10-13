@@ -80,8 +80,6 @@ services:
       - ${CONTAINERS_PATH}/vaultwarden:/data
     ports:
       - 8084:80
-    healthcheck:
-      test: ["CMD", "curl", "-ILXGET", "http://localhost"]
     restart: always
 
 volumes:
