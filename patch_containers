@@ -1,5 +1,8 @@
 #!/usr/bin/env bash
 
+set -euo pipefail 2>/dev/null || { set -euo; setopt pipefail; }
+IFS=$'\n\t'
+
 declare -A DEPENDENT_CONTAINERS=(
     ["gluetun"]="qbittorrent qbittorrent-age-tagger"
     ["mariadb"]="homeassistant kodi"
@@ -7,6 +10,72 @@ declare -A DEPENDENT_CONTAINERS=(
     ["victoriametrics"]="grafana"
     ["victorialogs"]="grafana"
 )
+
+# Distroless containers that have no package manager to patch
+DISTROLESS_PREFIXES=( "victoria" "cloudflare" )
+
+error() { printf '%s\n' "$1" >&2; }
+
+check_alpine_privs() {
+    docker exec "$CONTAINER" sh -c '
+        if [ "$(id -u)" -ne 0 ] || [ ! -w /lib/apk/db ]; then
+            echo "SKIP"; exit 0
+        fi
+        exit 0
+    ' >/dev/null 2>&1
+}
+
+check_debian_privs() {
+    local USER
+    USER=$(docker exec "$CONTAINER" sh -c 'whoami' | tr -d '\r\n')
+    if [[ "$USER" == "root" ]]; then
+        return 0
+    fi
+    local SUDO
+    SUDO=$(docker exec "$CONTAINER" sh -c 'which sudo' || true)
+    [[ -n "$SUDO" ]]
+}
+
+patch_alpine() {
+    local ITEMS
+    if ! check_alpine_privs; then
+        error "'$CONTAINER' cannot run 'apk': not root or apk database not writable"
+        return
+    fi
+    ITEMS=$(docker exec "$CONTAINER" sh -c 'apk -u list 2>/dev/null | wc -l')
+    if [[ "$ITEMS" -gt 0 ]]; then
+        docker exec "$CONTAINER" sh -c "apk upgrade && find /usr/lib -regex '^.*\(__pycache__\|\.py[co]\)$' -delete && rm -rf /var/cache/apk/*" && \
+            restart_container
+        check_priority
+    fi
+}
+
+patch_debian() {
+    local APT_CMD="apt"
+    local USER
+    USER=$(docker exec "$CONTAINER" sh -c 'whoami' | tr -d '\r\n')
+    if [[ "$USER" != "root" ]]; then
+        if ! check_debian_privs; then
+            error "'$CONTAINER' cannot run 'apt': not root or sudo not available"
+            return
+        fi
+        APT_CMD="sudo apt"
+    fi
+
+    docker exec "$CONTAINER" sh -c "$APT_CMD update"
+    local ITEMS
+    ITEMS=$(docker exec "$CONTAINER" sh -c "$APT_CMD list --upgradable 2>/dev/null" | grep upgradable | wc -l)
+    if [[ "$ITEMS" -gt 0 ]]; then
+        docker exec "$CONTAINER" sh -c "export DEBIAN_FRONTEND=noninteractive && $APT_CMD upgrade -y && $APT_CMD clean autoclean && $APT_CMD autoremove -y" && \
+            restart_container
+        check_priority
+    fi
+}
+
+restart_container() {
+    echo -e "\n>>> Restarting container '$CONTAINER' after installing updates ..."
+    docker restart "$CONTAINER"
+}
 
 check_priority() {
     if [[ " ${!DEPENDENT_CONTAINERS[@]} " =~ " $CONTAINER " ]]; then
@@ -17,83 +86,50 @@ check_priority() {
     fi
 }
 
-restart_container() {
-    echo -e "\n>>> Restarting container '$CONTAINER' after installing updates ..."
-    docker restart "$CONTAINER"
-}
-
-patch_alpine() {
-    if docker exec "$CONTAINER" sh -c '[ "$(id -u)" -eq 0 ] && [ -w /lib/apk/db ]' 2>/dev/null; then
-        docker exec "$CONTAINER" sh -c 'apk update'
-        ITEMS=$(docker exec "$CONTAINER" sh -c 'apk -u list' | wc -l)
-        if [[ "$ITEMS" -gt 0 ]]; then
-            docker exec "$CONTAINER" sh -c "apk upgrade && find /usr/lib -regex '^.*\(__pycache__\|\.py[co]\)$' -delete && rm -rf /var/cache/apk/*" && \
-            restart_container
-            check_priority
-        fi
-        unset ITEMS
-    else
-        echo "'$CONTAINER' has NOT been updated, lacking privileges to run 'apk'!"
-    fi
-}
-
-
-patch_debian() {
-    # use 'sudo' if user isn't 'root'
-    APT_CMD="apt"
-    CONTAINER_USER=$(docker exec "$CONTAINER" sh -c 'whoami' | tr -d '\r\n')
-    if [[ "$CONTAINER_USER" != "root" ]]; then
-        if [[ $(docker exec "$CONTAINER" sh -c 'which sudo') ]]; then
-            APT_CMD="sudo apt"
-        fi
-    fi
-
-    docker exec "$CONTAINER" sh -c "$APT_CMD update"
-    ITEMS=$(docker exec "$CONTAINER" sh -c "$APT_CMD list --upgradable 2>/dev/null" | grep upgradable | wc -l)
-    if [[ "$ITEMS" -gt 0 ]]; then
-        docker exec "$CONTAINER" sh -c "export DEBIAN_FRONTEND=noninteractive && $APT_CMD upgrade -y && $APT_CMD clean autoclean && $APT_CMD autoremove -y" && \
-        restart_container
-        check_priority
-    fi
-    unset APT_CMD CONTAINER_USER ITEMS
-}
-
 find_release() {
+    local OS_RELEASE RELEASE
     OS_RELEASE=$(docker exec "$CONTAINER" sh -c 'cat /etc/os-release')
     RELEASE=$(echo "$OS_RELEASE" | awk -F= '$1=="ID" { print $2 ;}' | tr -d '[:cntrl:]')
 
-    # if /etc/os-release wasn't present, check with uname
+    # if /etc/os-release was not present, check with uname
     if [[ -z "$RELEASE" ]]; then
         OS_RELEASE=$(docker exec "$CONTAINER" sh -c 'uname -r')
         if [[ "$OS_RELEASE" == *generic* ]]; then
             RELEASE="generic"
         else
-            echo "ERROR: Unexpected release type '$OS_RELEASE' for container '$CONTAINER'!"
+            error "Unexpected release type '$OS_RELEASE' for container '$CONTAINER'"
             exit 1
         fi
     fi
-    unset OS_RELEASE
+    RELEASE="${RELEASE:-}"
+}
+
+is_distroless() {
+    local _prefix
+    for _prefix in "${DISTROLESS_PREFIXES[@]}"; do
+        [[ "$CONTAINER" == "${_prefix}"* ]] && return 0
+    done
+    return 1
 }
 
 get_release_and_patch_server() {
-    if [[ "$CONTAINER" == "victoria"* ]] || [[ "$CONTAINER" == "cloudflare"* ]]; then
+    if is_distroless; then
         echo -e "\n>>> Container '$CONTAINER' is distroless, skipping...\n"
-    else
-        find_release
-        if [[ ! -z "$RELEASE" ]]; then
-            echo -e "\n>>> Container '$CONTAINER' is running OS release '$RELEASE'.\n"
-            if [[ "$RELEASE" == 'alpine' || "$RELEASE" == 'generic' ]]; then
-                patch_alpine
-            elif [[ "$RELEASE" == 'debian' || "$RELEASE" == 'ubuntu' ]]; then
-                patch_debian
-            else
-                echo "ERROR: Release type '$RELEASE' for container '$CONTAINER' is not currently supported!"
-            fi
-        else
-        echo "ERROR: Failed to retrieve release for '$CONTAINER'!"
-        fi
+        return
     fi
-    unset RELEASE
+    find_release
+    if [[ -n "$RELEASE" ]]; then
+        echo -e "\n>>> Container '$CONTAINER' is running OS release '$RELEASE'.\n"
+        if [[ "$RELEASE" == 'alpine' || "$RELEASE" == 'generic' ]]; then
+            patch_alpine
+        elif [[ "$RELEASE" == 'debian' || "$RELEASE" == 'ubuntu' ]]; then
+            patch_debian
+        else
+            error "Release type '$RELEASE' for container '$CONTAINER' is not currently supported"
+        fi
+    else
+        error "Failed to retrieve release for '$CONTAINER'"
+    fi
 }
 
 for PRIORITY in "${!DEPENDENT_CONTAINERS[@]}"; do
@@ -115,4 +151,4 @@ for CONTAINER in $(docker ps --format "{{.Names}}"); do
     fi
 done
 
-unset CONTAINER RELEASE
+unset CONTAINER RELEASE PRIORITY DEPENDENT APT_CMD USER _prefix
