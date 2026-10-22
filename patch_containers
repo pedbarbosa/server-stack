@@ -12,7 +12,12 @@ declare -A DEPENDENT_CONTAINERS=(
 )
 
 # Distroless containers that have no package manager to patch
-DISTROLESS_PREFIXES=( "victoria" "cloudflare" )
+DISTROLESS_PREFIXES=( "cloudflare" "victoria" )
+
+# Initialize all script-level variables so set -u (nounset) doesn't fail
+APT_CMD="" CONTAINER="" CONTAINER_PREFIX="" DEPENDENT="" \
+    ITEMS="" OS_RELEASE="" PRIORITY="" RESTART_TARGET="" RELEASE="" \
+    USER=""
 
 error() { printf '%s\n' "$1" >&2; }
 
@@ -87,7 +92,7 @@ check_priority() {
 }
 
 find_release() {
-    local OS_RELEASE RELEASE
+    local OS_RELEASE
     OS_RELEASE=$(docker exec "$CONTAINER" sh -c 'cat /etc/os-release')
     RELEASE=$(echo "$OS_RELEASE" | awk -F= '$1=="ID" { print $2 ;}' | tr -d '[:cntrl:]')
 
@@ -101,13 +106,12 @@ find_release() {
             exit 1
         fi
     fi
-    RELEASE="${RELEASE:-}"
 }
 
 is_distroless() {
-    local _prefix
-    for _prefix in "${DISTROLESS_PREFIXES[@]}"; do
-        [[ "$CONTAINER" == "${_prefix}"* ]] && return 0
+    local CONTAINER_PREFIX
+    for CONTAINER_PREFIX in "${DISTROLESS_PREFIXES[@]}"; do
+        [[ "$CONTAINER" == "${CONTAINER_PREFIX}"* ]] && return 0
     done
     return 1
 }
@@ -151,4 +155,5 @@ for CONTAINER in $(docker ps --format "{{.Names}}"); do
     fi
 done
 
-unset CONTAINER RELEASE PRIORITY DEPENDENT APT_CMD USER _prefix
+unset APT_CMD CONTAINER CONTAINER_PREFIX DEPENDENT ITEMS OS_RELEASE PRIORITY \
+    RESTART_TARGET RELEASE USER
