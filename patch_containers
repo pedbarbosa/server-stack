@@ -1,6 +1,5 @@
 #!/usr/bin/env bash
 
-set -euo pipefail 2>/dev/null || { set -euo; setopt pipefail; }
 IFS=$'\n\t'
 
 declare -A DEPENDENT_CONTAINERS=(
@@ -23,10 +22,7 @@ error() { printf '%s\n' "$1" >&2; }
 
 check_alpine_privs() {
     docker exec "$CONTAINER" sh -c '
-        if [ "$(id -u)" -ne 0 ] || [ ! -w /lib/apk/db ]; then
-            echo "SKIP"; exit 0
-        fi
-        exit 0
+        [ "$(id -u)" -eq 0 ] && [ -w /lib/apk/db ]
     ' >/dev/null 2>&1
 }
 
@@ -47,11 +43,22 @@ patch_alpine() {
         error "'$CONTAINER' cannot run 'apk': not root or apk database not writable"
         return
     fi
-    ITEMS=$(docker exec "$CONTAINER" sh -c 'apk -u list 2>/dev/null | wc -l')
+    echo ">>> Updating package list for '$CONTAINER'..."
+    local UPDATE_OK
+    UPDATE_OK=$(docker exec "$CONTAINER" sh -c 'apk update >/dev/null 2>&1' && echo "yes" || echo "no")
+    if [[ "$UPDATE_OK" == "no" ]]; then
+        error "'$CONTAINER' failed to update package list"
+        return
+    fi
+    ITEMS=$(docker exec "$CONTAINER" sh -c 'apk -u list 2>/dev/null' | grep upgradable | wc -l)
     if [[ "$ITEMS" -gt 0 ]]; then
-        docker exec "$CONTAINER" sh -c "apk upgrade && find /usr/lib -regex '^.*\(__pycache__\|\.py[co]\)$' -delete && rm -rf /var/cache/apk/*" && \
+        echo ">>> Installing updates for '$CONTAINER'..."
+        if docker exec "$CONTAINER" sh -c "apk upgrade && find /usr/lib -regex '^.*\(__pycache__\|\.py[co]\)$' -delete && rm -rf /var/cache/apk/*"; then
             restart_container
-        check_priority
+            check_priority
+        else
+            error "'$CONTAINER' failed to install updates"
+        fi
     fi
 }
 
@@ -67,13 +74,25 @@ patch_debian() {
         APT_CMD="sudo apt"
     fi
 
-    docker exec "$CONTAINER" sh -c "$APT_CMD update"
+    echo ">>> Updating package list for '$CONTAINER'..."
+    local UPDATE_OK
+    UPDATE_OK=$(docker exec "$CONTAINER" sh -c "$APT_CMD update >/dev/null 2>&1" && echo "yes" || echo "no")
+    if [[ "$UPDATE_OK" == "no" ]]; then
+        error "'$CONTAINER' failed to update package list"
+        return
+    fi
     local ITEMS
-    ITEMS=$(docker exec "$CONTAINER" sh -c "$APT_CMD list --upgradable 2>/dev/null" | grep upgradable | wc -l)
+    ITEMS=$(docker exec "$CONTAINER" sh -c "$APT_CMD list --upgradable 2>/dev/null" | grep upgradable | wc -l) || true
     if [[ "$ITEMS" -gt 0 ]]; then
-        docker exec "$CONTAINER" sh -c "export DEBIAN_FRONTEND=noninteractive && $APT_CMD upgrade -y && $APT_CMD clean autoclean && $APT_CMD autoremove -y" && \
+        echo ">>> Installing updates for '$CONTAINER'..."
+        if docker exec "$CONTAINER" sh -c "export DEBIAN_FRONTEND=noninteractive && $APT_CMD upgrade -y && $APT_CMD clean autoclean && $APT_CMD autoremove -y"; then
             restart_container
-        check_priority
+            check_priority
+        else
+            error "'$CONTAINER' failed to install updates"
+        fi
+    else
+        echo ">>> No packages to update for '$CONTAINER'"
     fi
 }
 
@@ -103,7 +122,7 @@ find_release() {
             RELEASE="generic"
         else
             error "Unexpected release type '$OS_RELEASE' for container '$CONTAINER'"
-            exit 1
+            return 1
         fi
     fi
 }
