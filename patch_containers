@@ -1,7 +1,5 @@
 #!/usr/bin/env bash
 
-IFS=$'\n\t'
-
 declare -A DEPENDENT_CONTAINERS=(
     ["gluetun"]="qbittorrent qbittorrent-age-tagger"
     ["mariadb"]="homeassistant kodi"
