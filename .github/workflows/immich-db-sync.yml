@@ -10,7 +10,9 @@ name: Sync Immich database images
 
 on:
   schedule:
-    - cron: "46 20 * * *"
+    # Daily at 04:30 in Brisbane
+    - cron: "30 4 * * *"
+      timezone: "Australia/Brisbane"
   workflow_dispatch:
 
 permissions:
