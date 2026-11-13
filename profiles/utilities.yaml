@@ -5,6 +5,8 @@ services:
     container_name: bgg
     profiles: ["utilities", "boardgames", "all"]
     environment:
+      PUID: ${PUID}
+      PGID: ${PGID}
       TZ: ${TIMEZONE}
       BGG_API_KEY: ${BGG_API_KEY}
       BGG_USERS: ${BGG_USERS}
