@@ -65,24 +65,6 @@ services:
       - 8089:80
     restart: always
 
-  smokeping:
-    image: linuxserver/smokeping
-    container_name: smokeping
-    profiles: ["monitoring", "network", "all"]
-    environment:
-      PUID: ${PUID}
-      PGID: ${PGID}
-      TZ: ${TIMEZONE}
-      MASTER_URL: https://smokeping.${MY_DOMAIN}/smokeping/
-    volumes:
-      - ${CONTAINERS_PATH}/smokeping/config:/config
-      - ${CONTAINERS_PATH}/smokeping/data:/data
-    ports:
-      - 8098:80
-    healthcheck:
-      test: ["CMD", "wget", "http://localhost:80", "--spider", "-q"]
-    restart: always
-
   victorialogs:
     image: victoriametrics/victoria-logs
     container_name: victorialogs

@@ -139,11 +139,6 @@ librespeed.<DOMAIN> {
 	reverse_proxy host.docker.internal:8089
 }
 
-smokeping.<DOMAIN> {
-    import cloudflare_tls
-	reverse_proxy host.docker.internal:8098
-}
-
 # --- utilities profile ---
 
 bgg.<DOMAIN> {
