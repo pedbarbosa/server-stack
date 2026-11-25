@@ -89,6 +89,28 @@ docker compose --profile media --profile monitoring up -d
 - `networking` - VPN, proxy, SSL, dynamic DNS, and mail services
 - `utilities` - Database and utility services
 
+### Home Assistant: custom Tuya Local profiles
+
+[Tuya Local](https://github.com/make-all/tuya-local) controls Tuya devices
+over the LAN, using a profile per device model. For a device none of its
+built-in profiles match, `config/tuya_local/` holds a custom one, and the
+`homeassistant` service mounts it read-only into Tuya Local's `devices`
+folder:
+
+- `kogan_smarterhome_airpurifier.yaml`: Kogan SmarterHome 5-stage air purifier
+
+Notes:
+
+- **Install Tuya Local first** (from HACS/Marketplace). Otherwise Docker
+  creates the `custom_components/tuya_local/devices/` path itself, which
+  leaves Home Assistant a broken `tuya_local` folder.
+- **After changing a profile, recreate the container**
+  (`docker compose up -d homeassistant`): a file mount keeps pointing at the
+  old file once `git pull` replaces it.
+- **Updating Tuya Local logs "Could not create backup"**, because HACS can't
+  delete the mounted file when it clears the integration's folder. The
+  update itself still installs, and the profile stays in place.
+
 ## Tools
 
 ### Container security patcher

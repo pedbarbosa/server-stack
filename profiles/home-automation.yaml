@@ -12,6 +12,10 @@ services:
     volumes:
       - /etc/localtime:/etc/localtime:ro
       - ${CONTAINERS_PATH}/homeassistant:/config
+      # Custom Tuya Local device profile (needs Tuya Local installed). Tuya
+      # Local only reads profiles from its own devices folder, and an update
+      # of the integration replaces that folder, so mount it in from here.
+      - ../config/tuya_local/kogan_smarterhome_airpurifier.yaml:/config/custom_components/tuya_local/devices/kogan_smarterhome_airpurifier.yaml:ro
     healthcheck:
       test: ["CMD", "curl", "-ILXGET", "http://localhost:8123"]
     restart: always

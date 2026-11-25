@@ -1,0 +1,132 @@
+# Tuya Local (https://github.com/make-all/tuya-local) device profile for the
+# Kogan SmarterHome 5-stage air purifier (Tuya product ID c11MP3dTDaJvOwIO),
+# which none of Tuya Local's built-in profiles match. Written from the
+# device's data points as reported by the official Tuya integration's
+# diagnostics, and checked with Tuya Local's own config tests.
+#
+# profiles/home-automation.yaml mounts it read-only into Tuya Local's devices
+# folder. See the README's Home Assistant section.
+name: Air purifier
+products:
+  - id: c11MP3dTDaJvOwIO
+    manufacturer: Kogan
+    model: SmarterHome 5-stage air purifier
+entities:
+  - entity: fan
+    translation_key: air_purifier
+    dps:
+      - id: 1
+        name: switch
+        type: boolean
+      # The cloud calls these auto/sleep/manual/pollen; locally the purifier
+      # sends their index (confirmed: "1" while in auto).
+      - id: 3
+        name: preset_mode
+        type: string
+        mapping:
+          - dps_val: "0"
+            value: manual
+          - dps_val: "1"
+            value: auto
+          - dps_val: "2"
+            value: sleep
+          - dps_val: "3"
+            value: pollen
+      - id: 4
+        name: speed
+        type: string
+        mapping:
+          - dps_val: "1"
+            value: 33
+          - dps_val: "2"
+            value: 66
+          - dps_val: "3"
+            value: 100
+  - entity: sensor
+    class: pm25
+    dps:
+      - id: 2
+        name: sensor
+        type: integer
+        unit: ugm3
+        class: measurement
+  # The cloud declares this as a boolean, but the purifier reports a
+  # percentage (99 when checked), which is why the official integration's
+  # filter sensor is unavailable.
+  - entity: sensor
+    translation_key: filter_life
+    category: diagnostic
+    dps:
+      - id: 5
+        name: sensor
+        type: integer
+        unit: "%"
+  - entity: switch
+    translation_key: ionizer
+    category: config
+    dps:
+      - id: 6
+        name: switch
+        type: boolean
+  - entity: lock
+    translation_key: child_lock
+    category: config
+    dps:
+      - id: 7
+        name: lock
+        type: boolean
+  - entity: button
+    translation_key: filter_reset
+    category: config
+    dps:
+      - id: 11
+        name: button
+        type: boolean
+        optional: true
+  # Timer in hours; the purifier spells "cancel" as "cancle".
+  - entity: select
+    translation_key: timer
+    category: config
+    dps:
+      - id: 19
+        name: option
+        type: string
+        mapping:
+          - dps_val: cancle
+            value: cancel
+          - dps_val: "1"
+            value: "1h"
+          - dps_val: "2"
+            value: "2h"
+          - dps_val: "3"
+            value: "3h"
+          - dps_val: "4"
+            value: "4h"
+  # Not in the cloud's data point list, but the purifier sends it. Mapped
+  # like Tuya Local's Kogan 2S profile.
+  - entity: sensor
+    translation_key: air_quality
+    class: enum
+    dps:
+      - id: 22
+        name: sensor
+        type: string
+        optional: true
+        mapping:
+          - dps_val: "1"
+            value: good
+          - dps_val: "2"
+            value: moderate
+          - dps_val: "3"
+            value: poor
+          - dps_val: "4"
+            value: severe
+  - entity: sensor
+    translation_key: time_remaining
+    class: duration
+    category: diagnostic
+    dps:
+      - id: 20
+        name: sensor
+        type: integer
+        unit: min
