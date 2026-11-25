@@ -135,6 +135,8 @@ Check if your network devices need a certificate update by running:
 ./update_certs -v
 ```
 
+It copies Caddy's certificate to each device in `NETWORK_DEVICES` whose certificate differs, and restarts its `uhttpd`. If a `slack-notify` command is installed (it posts its standard input to Slack), it reports updated certificates and failures there, and stays silent when everything is current. With `-v` it also prints each device's status and always sends a summary, which makes it a quick check that Slack messages get through.
+
 To run it periodically, run the following to add it to your crontab:
 
 ```
