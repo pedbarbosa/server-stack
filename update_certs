@@ -1,27 +1,47 @@
 #!/usr/bin/env zsh
+#
+# Copy the certificate Caddy keeps for each network device (NETWORK_DEVICES in
+# .env) to that device when it differs, and restart its uhttpd. Tells Slack
+# (via slack-notify) which certificates were updated and what failed. Silent
+# when everything is current, unless -v is given.
 
-set -euo pipefail 2>/dev/null || { set -euo; setopt pipefail; }
+set -u
+setopt pipefail
 IFS=$'\n\t'
 
 VERBOSE=0
 
+# cron's PATH may not include /usr/local/bin
+SLACK_NOTIFY=$(command -v slack-notify || echo /usr/local/bin/slack-notify)
+
 usage() {
     cat <<EOF
 Usage: $0 [-v] [-h]
-  -v    Verbose output
+  -v    Print each device's status, and always send a Slack summary
+        (also when every certificate is current)
   -h    Show this help and exit
 EOF
 }
 
-info() { printf '%s\n' "$1"; }
-debug() { if [[ ${VERBOSE:-0} -eq 1 ]]; then printf '%s\n' "$1"; fi }
-error() { printf '%s\n' "$1" >&2; exit 1; }
+debug() { if [[ $VERBOSE -eq 1 ]]; then printf '%s\n' "$1"; fi }
+
+notify() {
+    if ! printf '%s\n' "$1" | "$SLACK_NOTIFY"; then
+        printf '%s\n' "WARNING: Failed to send the Slack notification" >&2
+    fi
+}
+
+error() {
+    printf '%s\n' "ERROR: $1" >&2
+    notify "🚨 update_certs: $1"
+    exit 1
+}
 
 while getopts "vh" opt; do
     case "${opt}" in
         v) VERBOSE=1 ;;
         h) usage; exit 0 ;;
-        *) usage; exit 1 ;;
+        *) usage >&2; exit 1 ;;
     esac
 done
 shift $((OPTIND - 1))
@@ -33,37 +53,85 @@ get_env_var() {
 }
 
 SCRIPT_PATH="$( cd -- "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )"
-DOMAIN=$(get_env_var "MY_DOMAIN" "${SCRIPT_PATH}/.env")
-if [ -z "${DOMAIN}" ]; then
-    error "Variable 'MY_DOMAIN' isn't set in '${SCRIPT_PATH}/.env', quitting ..."
-fi
+ENV_FILE="${SCRIPT_PATH}/.env"
+[[ -r "$ENV_FILE" ]] || error "Can't read '${ENV_FILE}'"
 
-NETWORK_DEVICES=$(get_env_var "NETWORK_DEVICES" "${SCRIPT_PATH}/.env")
-if [ -z "${NETWORK_DEVICES}" ]; then
-    error "Variable 'NETWORK_DEVICES' isn't set in '${SCRIPT_PATH}/.env', quitting ..."
-fi
+DOMAIN=$(get_env_var "MY_DOMAIN" "$ENV_FILE")
+[[ -n "${DOMAIN}" ]] || error "Variable 'MY_DOMAIN' isn't set in '${ENV_FILE}'"
+
+NETWORK_DEVICES=$(get_env_var "NETWORK_DEVICES" "$ENV_FILE")
+[[ -n "${NETWORK_DEVICES}" ]] || error "Variable 'NETWORK_DEVICES' isn't set in '${ENV_FILE}'"
 DEVICES=("${(@s/,/)NETWORK_DEVICES}")
 
-CONTAINERS_PATH=$(get_env_var "CONTAINERS_PATH" "${SCRIPT_PATH}/.env")
-if [ -z "${CONTAINERS_PATH}" ]; then
-    error "Variable 'CONTAINERS_PATH' isn't set in '${SCRIPT_PATH}/.env', quitting ..."
-fi
+CONTAINERS_PATH=$(get_env_var "CONTAINERS_PATH" "$ENV_FILE")
+[[ -n "${CONTAINERS_PATH}" ]] || error "Variable 'CONTAINERS_PATH' isn't set in '${ENV_FILE}'"
 CERT_PATH="${CONTAINERS_PATH}/caddy/data/certificates/acme-v02.api.letsencrypt.org-directory"
+
+# Fail fast instead of hanging on a password or host key prompt when run from cron
+SSH_OPTS=(-o BatchMode=yes -o ConnectTimeout=10)
+
+UPDATED=()
+CURRENT=()
+FAILURES=()
 
 for i in "${DEVICES[@]}"; do
     DEVICE_CERT_PATH="${CERT_PATH}/${i}.${DOMAIN}/$i.$DOMAIN"
-    LOCAL_CERT=$(sudo md5sum $DEVICE_CERT_PATH.crt | cut -d ' ' -f1)
-    REMOTE_CERT=$(ssh $i "md5sum /etc/uhttpd.crt | cut -d ' ' -f1")
-    if [[ $VERBOSE -eq 1 ]]; then
-        echo "Checking certificate for $i.$DOMAIN: $LOCAL_CERT"
-        echo "Remote certificate for $i.$DOMAIN: $REMOTE_CERT"
+
+    # Caddy's data is root-owned; -n fails instead of waiting for a sudo password
+    if ! OUTPUT=$(sudo -n md5sum "$DEVICE_CERT_PATH.crt" 2>&1); then
+        FAILURES+=("$i: can't read the local certificate: $OUTPUT")
+        continue
     fi
-    if [ "$LOCAL_CERT" != "$REMOTE_CERT" ]; then
-        sudo scp -O $DEVICE_CERT_PATH.crt $i:/etc/uhttpd.crt && sudo scp -O $DEVICE_CERT_PATH.key $i:/etc/uhttpd.key \
-          && ssh $i '/etc/init.d/uhttpd restart' && echo "$i.$DOMAIN: Certificate updated and uhttpd service restarted."
+    LOCAL_CERT=${OUTPUT%% *}
+
+    if ! OUTPUT=$(ssh "${SSH_OPTS[@]}" "$i" "md5sum /etc/uhttpd.crt" 2>&1); then
+        FAILURES+=("$i: can't read the device's certificate: $OUTPUT")
+        continue
+    fi
+    REMOTE_CERT=${OUTPUT%% *}
+
+    debug "Local certificate for $i.$DOMAIN: $LOCAL_CERT"
+    debug "Remote certificate for $i.$DOMAIN: $REMOTE_CERT"
+
+    if [[ "$LOCAL_CERT" == "$REMOTE_CERT" ]]; then
+        debug "Certificate for $i is up to date, no action needed."
+        CURRENT+=("$i")
+        continue
+    fi
+
+    if OUTPUT=$( { sudo -n scp -O "${SSH_OPTS[@]}" "$DEVICE_CERT_PATH.crt" "$i:/etc/uhttpd.crt" \
+            && sudo -n scp -O "${SSH_OPTS[@]}" "$DEVICE_CERT_PATH.key" "$i:/etc/uhttpd.key" \
+            && ssh "${SSH_OPTS[@]}" "$i" '/etc/init.d/uhttpd restart'; } 2>&1 ); then
+        debug "$i.$DOMAIN: Certificate updated and uhttpd service restarted."
+        UPDATED+=("$i.$DOMAIN")
     else
-        if [[ $VERBOSE -eq 1 ]]; then
-            echo "Certificate for $i is up to date, no action needed."
-        fi
-    fi    
+        FAILURES+=("$i: updating the certificate failed: $OUTPUT")
+    fi
 done
+
+MESSAGE=""
+if [[ ${#UPDATED[@]} -gt 0 ]]; then
+    MESSAGE="update_certs: certificate updated and uhttpd restarted on ${(j:, :)UPDATED}"
+elif [[ $VERBOSE -eq 1 && ${#FAILURES[@]} -eq 0 ]]; then
+    MESSAGE="update_certs: certificates are up to date on ${(j:, :)CURRENT}"
+fi
+
+if [[ ${#FAILURES[@]} -gt 0 ]]; then
+    FAILED="🚨 update_certs failed:"
+    for failure in "${FAILURES[@]}"; do
+        FAILED+=$'\n'"• $failure"
+    done
+    printf '%s\n' "$FAILED" >&2
+    if [[ -n "$MESSAGE" ]]; then
+        MESSAGE="$FAILED"$'\n'"$MESSAGE"
+    else
+        MESSAGE="$FAILED"
+    fi
+fi
+
+if [[ -n "$MESSAGE" ]]; then
+    debug "$MESSAGE"
+    notify "$MESSAGE"
+fi
+
+[[ ${#FAILURES[@]} -eq 0 ]]
